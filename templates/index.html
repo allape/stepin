@@ -1,0 +1,78 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVPN Manager</title>
+    <style>
+        .list {
+            border-collapse: collapse;
+            td, th {
+                border: 1px solid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script lang="javascript">
+        function remove(name) {
+            if (!confirm(`Are you sure to revoke and delete ${decodeURIComponent(name)}? This can NOT be undone!\nAnd this operation can NOT revoke this certificate, reinitialize the Root CA to apply revocation!`)) {
+                return;
+            }
+            location.href=`/remove?name=${name}`;
+        }
+        function initialize() {
+            if (!confirm('You will lost ALL existing data, are you sure?')) {
+                return;
+            }
+            if (confirm('Two-step confirmation: click cancel to continue reinitialize')) {
+                return;
+            }
+            location.href='/initialize?key={{.InitializeAuthKey | urlescaper}}';
+        }
+    </script>
+    {{range .Errors}}
+        <div>{{.}}</div>
+        <hr>
+    {{end}}
+    <div>
+        {{if eq true .IsInitialized}}
+        <a href="/add">Sign</a>
+        |
+        <a href="/download-root-ca">Download Root CA Certificate</a>
+        |
+        <a href="javascript:initialize()">Reinitialize</a>
+        {{else}}
+        <a href="javascript:initialize()">Initialize</a>
+        {{end}}
+    </div>
+    <hr>
+    <table class="list">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Inspection</th>
+                <th>Certificate File</th>
+                <th>Key File</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Clients}}
+                <tr>
+                    <td>{{.Filename}}</td>
+                    <td>{{.Inspection}}</td>
+                    <td><a href="/download?filename={{.Filename | urlescaper}}.crt" target="_blank">{{.Filename}}.crt</a></td>
+                    <td><a href="/download?filename={{.Filename | urlescaper}}.key" target="_blank">{{.Filename}}.key</a></td>
+                    <td>
+                        <a href="javascript:remove('{{.Filename | urlescaper}}')">Remove</a>
+                    </td>
+                </tr>
+            {{else}}
+                <tr>
+                    <td colspan="5">No signed certs</td>
+                </tr>
+            {{end}}
+        </tbody>
+    </table>
+</body>
+</html>

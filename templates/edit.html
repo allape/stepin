@@ -1,0 +1,42 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign a new certificate</title>
+    <style>
+        input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    {{range .Errors}}
+        <div>{{.}}</div>
+        <hr>
+    {{end}}
+    <form action="/add.do" method="post" enctype="multipart/form-data">
+        <table>
+            <tbody>
+                <tr>
+                    <td><label for="filename">*Filename</label></td>
+                    <td><input type="text" id="filename" name="filename" value="{{.CertificateForm.Filename}}" /></td>
+                </tr>
+                <tr>
+                    <td><label for="hostname">*Hostname</label></td>
+                    <td><input type="text" id="hostname" name="hostname" value="{{.CertificateForm.Hostname}}" /></td>
+                </tr>
+                <tr>
+                    <td><label for="expireInHour">*ExpireInHour</label></td>
+                    <td><input type="number" min="12" id="expireInHour" name="expireInHour" value="{{.CertificateForm.ExpireInHour}}" placeholder="Default is 8760" /></td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <button type="submit">Submit</button>
+                        <button type="button" onclick="history.back()">Back</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</body>
+</html>
