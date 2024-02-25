@@ -19,9 +19,9 @@ FROM alpine:latest as base
 
 WORKDIR /app
 
-COPY --from=builder /build/stepin .
-COPY templates templates
-
 RUN apk update && apk add step-cli
+
+COPY templates templates
+COPY --from=builder /build/stepin .
 
 CMD [ "/app/stepin" ]
