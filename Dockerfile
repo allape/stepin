@@ -12,7 +12,7 @@ COPY go.sum .
 RUN /usr/local/go/bin/go mod download
 
 COPY main.go .
-COPY stepin.go .
+COPY stepin stepin
 RUN /usr/local/go/bin/go build -o stepin .
 
 FROM alpine:latest as base

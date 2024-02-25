@@ -2,6 +2,7 @@ name: stepin
 services:
   stepin:
     image: allape/stepin
+    restart: always
 #    build: docker build --build-arg https_proxy=http://host.docker.internal:1080 -t allape/stepin .
     volumes:
       - ./stepin-config:/etc/stepin
@@ -11,6 +12,6 @@ services:
     environment:
       - GIN_MODE=release
       - STEPIN_BIND=
-      - STEPIN_ALLOWED_IP=127.0.0.1,172.19.0.1,172.20.0.1
+      - STEPIN_ALLOWED_IP=127.0.0.1,192.168.65.1
       - STEPIN_ROOT_CA_PASSWORD=
         STEPIN_INTERMEDIA_CA_PASSWORD=
