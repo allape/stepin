@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"github.com/allape/stepin/stepin"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"html/template"
@@ -17,7 +19,7 @@ import (
 var (
 	Bind       = ":8080"
 	AllowedIPs = []string{"::1", "127.0.0.1"}
-	Config     = CAConfig{
+	Config     = stepin.CAConfig{
 		RootCaName:           "root_ca",
 		RootCaPassword:       "123456",
 		IntermediaCaName:     "intermedia_ca",
@@ -25,9 +27,10 @@ var (
 	}
 )
 
-var InitializeAuthKey = uuid.New().String()
-
-var initialized = false
+var (
+	InitializeAuthKey = uuid.New().String()
+	Initialized       = false
+)
 
 func init() {
 	StepinBind := os.Getenv("STEPIN_BIND")
@@ -51,14 +54,14 @@ func init() {
 
 	StepinConfigFolder := os.Getenv("STEPIN_CONFIG_FOLDER")
 	if StepinConfigFolder != "" {
-		ConfigFolder = StepinConfigFolder
-		LeafCertFolder = path.Join(ConfigFolder, "leaf")
+		stepin.ConfigFolder = StepinConfigFolder
+		stepin.Setup()
 	}
 
-	log.Println("Use config folder:", ConfigFolder)
-	log.Println("Use leaf cert folder:", LeafCertFolder)
+	log.Println("Use config folder:", stepin.ConfigFolder)
+	log.Println("Use leaf cert folder:", stepin.LeafCertFolder)
 
-	initialized = IsInitialized()
+	Initialized = stepin.IsInitialized()
 }
 
 func ErrorPage(ctx *gin.Context, code int, err ...error) {
@@ -67,16 +70,16 @@ func ErrorPage(ctx *gin.Context, code int, err ...error) {
 	})
 }
 
-func IndexPage(ctx *gin.Context, errs ...error) {
-	certs, err := CertList()
+func IndexPage(ctx *gin.Context, code int, errs ...error) {
+	certs, err := stepin.CertList(true)
 	if err != nil {
 		errs = append(errs, err)
 	}
-	ctx.HTML(http.StatusOK, "index.html", gin.H{
+	ctx.HTML(code, "index.html", gin.H{
 		"Errors":            errs,
 		"Certs":             certs,
 		"InitializeAuthKey": InitializeAuthKey,
-		"IsInitialized":     initialized,
+		"IsInitialized":     Initialized,
 	})
 }
 
@@ -103,15 +106,14 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 
 	router.GET("/", func(ctx *gin.Context) {
-		IndexPage(ctx)
+		IndexPage(ctx, http.StatusOK)
 	})
 	router.GET("/index", func(ctx *gin.Context) {
-		IndexPage(ctx)
+		IndexPage(ctx, http.StatusOK)
 	})
 
 	router.GET("/download-root-ca", func(ctx *gin.Context) {
-		filename := path.Join(ConfigFolder, Config.RootCaName+".crt")
-		_, err := os.Stat(filename)
+		_, err := os.Stat(stepin.RootCaCrtPath)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				ErrorPage(ctx, http.StatusNotFound, err)
@@ -120,7 +122,19 @@ func main() {
 			ErrorPage(ctx, http.StatusInternalServerError, err)
 			return
 		}
-		ctx.FileAttachment(filename, filename)
+		ctx.FileAttachment(path.Dir(stepin.RootCaCrtPath), stepin.RootCaCrtPath)
+	})
+	router.GET("/download-intermedia-ca", func(ctx *gin.Context) {
+		_, err := os.Stat(stepin.IntermediaCaCrtPath)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				ErrorPage(ctx, http.StatusNotFound, err)
+				return
+			}
+			ErrorPage(ctx, http.StatusInternalServerError, err)
+			return
+		}
+		ctx.FileAttachment(path.Dir(stepin.IntermediaCaCrtPath), stepin.IntermediaCaCrtPath)
 	})
 
 	router.GET("/download", func(ctx *gin.Context) {
@@ -129,7 +143,7 @@ func main() {
 			ErrorPage(ctx, http.StatusBadRequest, errors.New("filename is required for downloading"))
 			return
 		}
-		filename = path.Join(LeafCertFolder, filename)
+		filename = path.Join(stepin.LeafCertFolder, filename)
 		_, err := os.Stat(filename)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
@@ -148,12 +162,13 @@ func main() {
 			ErrorPage(ctx, http.StatusBadRequest, errors.New("key is not valid"))
 			return
 		}
-		err := Initialize(Config)
+		err := stepin.Initialize(Config)
 		if err != nil {
 			ErrorPage(ctx, http.StatusInternalServerError, err)
 			return
 		}
 		InitializeAuthKey = uuid.New().String()
+		Initialized = stepin.IsInitialized()
 		ctx.Redirect(http.StatusSeeOther, "/")
 	})
 
@@ -178,7 +193,7 @@ func main() {
 				"CertificateForm": form,
 			})
 			return
-		} else if ok, _ := regexp.MatchString("^\\w+$", form.Filename); !ok {
+		} else if ok, _ := regexp.MatchString("^[\\w.-]+$", form.Filename); !ok {
 			ctx.HTML(http.StatusBadRequest, "edit.html", gin.H{
 				"Errors":          []error{errors.New("filename is not valid")},
 				"CertificateForm": form,
@@ -195,11 +210,7 @@ func main() {
 			return
 		}
 
-		if form.ExpireInHour <= 0 {
-			form.ExpireInHour = 8760
-		}
-
-		err = SignCert(Config, form.Filename, form.Hostname, form.ExpireInHour)
+		certs, err := stepin.CertList(false)
 		if err != nil {
 			ctx.HTML(http.StatusInternalServerError, "edit.html", gin.H{
 				"Errors":          []error{err},
@@ -208,6 +219,43 @@ func main() {
 			return
 		}
 
+		for _, cert := range certs {
+			if cert.Filename == form.Filename {
+				ctx.HTML(http.StatusInternalServerError, "edit.html", gin.H{
+					"Errors":          []error{fmt.Errorf("%s already exists", form.Filename)},
+					"CertificateForm": form,
+				})
+				return
+			}
+		}
+
+		if form.ExpireInHour <= 0 {
+			form.ExpireInHour = 8760
+		}
+
+		err = stepin.SignCert(Config, form.Filename, form.Hostname, form.ExpireInHour)
+		if err != nil {
+			ctx.HTML(http.StatusInternalServerError, "edit.html", gin.H{
+				"Errors":          []error{err},
+				"CertificateForm": form,
+			})
+			return
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/")
+	})
+
+	router.GET("/remove", func(ctx *gin.Context) {
+		filename := strings.TrimSpace(ctx.Query("filename"))
+		if filename == "" {
+			IndexPage(ctx, http.StatusBadRequest, errors.New("filename can NOT be empty"))
+			return
+		}
+		err := stepin.RemoveCert(filename)
+		if err != nil {
+			IndexPage(ctx, http.StatusInternalServerError, err)
+			return
+		}
 		ctx.Redirect(http.StatusSeeOther, "/")
 	})
 

@@ -3,7 +3,6 @@ module github.com/allape/stepin
 go 1.22.0
 
 require (
-	github.com/allape/stdhook v0.0.0-20240224083816-c06d096680c1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.6.0
 )

@@ -14,11 +14,11 @@
 </head>
 <body>
     <script lang="javascript">
-        function remove(name) {
-            if (!confirm(`Are you sure to revoke and delete ${decodeURIComponent(name)}? This can NOT be undone!\nAnd this operation can NOT revoke this certificate, reinitialize the Root CA to apply revocation!`)) {
+        function remove(filename) {
+            if (!confirm(`Are you sure to delete ${decodeURIComponent(filename)}? This can NOT be undone!\nAnd this operation can NOT revoke this certificate, reinitialize the Root CA to apply revocation!`)) {
                 return;
             }
-            location.href=`/remove?name=${name}`;
+            location.href=`/remove?filename=${filename}`;
         }
         function initialize() {
             if (!confirm('You will lost ALL existing data, are you sure?')) {
@@ -40,6 +40,8 @@
         |
         <a href="/download-root-ca">Download Root CA Certificate</a>
         |
+        <a href="/download-intermedia-ca">Download Intermedia CA Certificate</a>
+        |
         <a href="javascript:initialize()">Reinitialize</a>
         {{else}}
         <a href="javascript:initialize()">Initialize</a>
@@ -57,10 +59,10 @@
             </tr>
         </thead>
         <tbody>
-            {{range .Clients}}
+            {{range .Certs}}
                 <tr>
                     <td>{{.Filename}}</td>
-                    <td>{{.Inspection}}</td>
+                    <td><pre>{{.Inspection}}</pre></td>
                     <td><a href="/download?filename={{.Filename | urlescaper}}.crt" target="_blank">{{.Filename}}.crt</a></td>
                     <td><a href="/download?filename={{.Filename | urlescaper}}.key" target="_blank">{{.Filename}}.key</a></td>
                     <td>
