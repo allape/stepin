@@ -3,13 +3,17 @@ module github.com/allape/stepin
 go 1.22.0
 
 require (
-	github.com/allape/stdhook v0.0.0-20240224083816-c06d096680c1 // indirect
+	github.com/allape/stdhook v0.0.0-20240224083816-c06d096680c1
+	github.com/gin-gonic/gin v1.9.1
+	github.com/google/uuid v1.6.0
+)
+
+require (
 	github.com/bytedance/sonic v1.11.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.9.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.18.0 // indirect

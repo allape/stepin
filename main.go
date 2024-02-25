@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"html/template"
 	"log"
 	"net/http"
@@ -24,7 +25,7 @@ var (
 	}
 )
 
-var InitializeAuthKey = "E18B1821-AA80-4E90-8BCC-72EF1C4D75AF"
+var InitializeAuthKey = uuid.New().String()
 
 var initialized = false
 
@@ -152,6 +153,7 @@ func main() {
 			ErrorPage(ctx, http.StatusInternalServerError, err)
 			return
 		}
+		InitializeAuthKey = uuid.New().String()
 		ctx.Redirect(http.StatusSeeOther, "/")
 	})
 
