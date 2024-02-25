@@ -156,8 +156,8 @@ func main() {
 			ErrorPage(ctx, http.StatusBadRequest, errors.New("filename is required for downloading"))
 			return
 		}
-		filename = path.Join(stepin.LeafCertFolder, filename)
-		_, err := os.Stat(filename)
+		certfile := path.Join(stepin.LeafCertFolder, filename)
+		_, err := os.Stat(certfile)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				ErrorPage(ctx, http.StatusNotFound, err)
@@ -166,7 +166,7 @@ func main() {
 			ErrorPage(ctx, http.StatusInternalServerError, err)
 			return
 		}
-		ctx.FileAttachment(filename, filename)
+		ctx.FileAttachment(certfile, filename)
 	})
 
 	router.GET("/initialize", func(ctx *gin.Context) {
