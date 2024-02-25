@@ -25,3 +25,4 @@ go.work
 .vscode
 
 stepin-config
+allowed-ips.txt

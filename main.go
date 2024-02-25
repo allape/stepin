@@ -38,10 +38,22 @@ func init() {
 		Bind = StepinBind
 	}
 
-	StepinAllowedIp := os.Getenv("STEPIN_ALLOWED_IP")
-	if StepinAllowedIp != "" {
-		AllowedIPs = strings.Split(StepinAllowedIp, ",")
+	StepinAllowedIpFile := os.Getenv("STEPIN_ALLOWED_IP_FILE")
+	if StepinAllowedIpFile != "" {
+		ips, err := os.ReadFile(StepinAllowedIpFile)
+		if err == nil {
+			AllowedIPs = append(AllowedIPs, strings.Split(string(ips), "\n")...)
+		}
 	}
+
+	var ips []string
+	for _, ip := range AllowedIPs {
+		ip = strings.TrimSpace(ip)
+		if ip != "" && !slices.Contains(ips, ip) {
+			ips = append(ips, ip)
+		}
+	}
+	AllowedIPs = ips
 
 	RootCaPassword := os.Getenv("STEPIN_ROOT_CA_PASSWORD")
 	if RootCaPassword != "" {
