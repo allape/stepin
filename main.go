@@ -135,7 +135,7 @@ func main() {
 			ErrorPage(ctx, http.StatusInternalServerError, err)
 			return
 		}
-		ctx.FileAttachment(path.Dir(stepin.RootCaCrtPath), stepin.RootCaCrtPath)
+		ctx.FileAttachment(stepin.RootCaCrtPath, path.Base(stepin.RootCaCrtPath))
 	})
 	router.GET("/download-intermedia-ca", func(ctx *gin.Context) {
 		_, err := os.Stat(stepin.IntermediaCaCrtPath)
@@ -147,7 +147,7 @@ func main() {
 			ErrorPage(ctx, http.StatusInternalServerError, err)
 			return
 		}
-		ctx.FileAttachment(path.Dir(stepin.IntermediaCaCrtPath), stepin.IntermediaCaCrtPath)
+		ctx.FileAttachment(stepin.IntermediaCaCrtPath, path.Base(stepin.IntermediaCaCrtPath))
 	})
 
 	router.GET("/download", func(ctx *gin.Context) {
