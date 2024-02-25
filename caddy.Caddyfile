@@ -1,3 +1,7 @@
-:8080 {
+:443 {
+#    tls /certs/keyserver.lan.crt /certs/keyserver.lan.key
+    reverse_proxy http://app:8080
+}
+:80 {
     reverse_proxy http://app:8080
 }
