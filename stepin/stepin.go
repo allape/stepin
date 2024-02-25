@@ -1,5 +1,7 @@
 package stepin
 
+// https://smallstep.com/docs/step-cli/reference/certificate/create/#usage
+
 import (
 	"context"
 	"errors"
@@ -194,7 +196,7 @@ func Initialize(config CAConfig) (err error) {
 	return nil
 }
 
-func SignCert(config CAConfig, filename, hostname string, expireInHour int) error {
+func SignCert(config CAConfig, filename, hostname string, keyType string, expireInHour int) error {
 	crtPath := path.Join(LeafCertFolder, filename+".crt")
 	keyPath := path.Join(LeafCertFolder, filename+".key")
 
@@ -223,6 +225,8 @@ func SignCert(config CAConfig, filename, hostname string, expireInHour int) erro
 		intermediaCaPasswordFile.Name(),
 		"--insecure",
 		"--no-password",
+		"--kty",
+		keyType,
 		"--not-after",
 		fmt.Sprintf("%dh", expireInHour),
 	)

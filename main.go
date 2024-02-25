@@ -86,6 +86,7 @@ func IndexPage(ctx *gin.Context, code int, errs ...error) {
 type CertificateForm struct {
 	Filename     string `form:"filename"`
 	Hostname     string `form:"hostname"`
+	KeyType      string `form:"keyType"`
 	ExpireInHour int    `form:"expireInHour"`
 }
 
@@ -219,6 +220,11 @@ func main() {
 			return
 		}
 
+		form.KeyType = strings.TrimSpace(form.KeyType)
+		if form.KeyType == "" {
+			form.KeyType = "EC"
+		}
+
 		for _, cert := range certs {
 			if cert.Filename == form.Filename {
 				ctx.HTML(http.StatusInternalServerError, "edit.html", gin.H{
@@ -233,7 +239,7 @@ func main() {
 			form.ExpireInHour = 8760
 		}
 
-		err = stepin.SignCert(Config, form.Filename, form.Hostname, form.ExpireInHour)
+		err = stepin.SignCert(Config, form.Filename, form.Hostname, form.KeyType, form.ExpireInHour)
 		if err != nil {
 			ctx.HTML(http.StatusInternalServerError, "edit.html", gin.H{
 				"Errors":          []error{err},

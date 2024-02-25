@@ -26,6 +26,16 @@
                     <td><input type="text" id="hostname" name="hostname" value="{{.CertificateForm.Hostname}}" /></td>
                 </tr>
                 <tr>
+                    <td><label for="keyType">Key Type</label></td>
+                    <td>
+                        <select id="keyType" name="keyType" value="">
+                            <option value="EC" {{if eq "EC" .CertificateForm.KeyType}}selected{{end}}>EC</option>
+                            <option value="OKP" {{if eq "OKP" .CertificateForm.KeyType}}selected{{end}}>OKP</option>
+                            <option value="RSA" {{if eq "RSA" .CertificateForm.KeyType}}selected{{end}}>RSA</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
                     <td><label for="expireInHour">*ExpireInHour</label></td>
                     <td><input type="number" min="12" id="expireInHour" name="expireInHour" value="{{.CertificateForm.ExpireInHour}}" placeholder="Default is 8760" /></td>
                 </tr>
