@@ -223,6 +223,7 @@ func SignCert(config CAConfig, filename, hostname string, keyType string, expire
 		IntermediaCaKeyPath,
 		"--ca-password-file",
 		intermediaCaPasswordFile.Name(),
+		"--bundle",
 		"--insecure",
 		"--no-password",
 		"--kty",
