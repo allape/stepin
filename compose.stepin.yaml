@@ -1,18 +1,34 @@
 name: stepin
 services:
-  stepin:
+  http:
+    image: "caddy"
+    restart: unless-stopped
+    networks:
+      - external
+      - internal
+    depends_on:
+      - app
+    ports:
+      - 8080:8080
+    volumes:
+      - ./caddy.Caddyfile:/etc/caddy/Caddyfile
+  app:
     image: allape/stepin
     restart: always
+    networks:
+      - internal
 #    build: docker build --build-arg https_proxy=http://host.docker.internal:1080 -t allape/stepin .
     volumes:
       - ./stepin-config:/etc/stepin
       - ./templates:/app/templates
       - ./allowed-ips.txt:/app/allowed-ips.txt
-    ports:
-      - 8080:8080
     environment:
       - GIN_MODE=release
       - STEPIN_BIND=
       - STEPIN_ALLOWED_IP_FILE=/app/allowed-ips.txt
       - STEPIN_ROOT_CA_PASSWORD=
       - STEPIN_INTERMEDIA_CA_PASSWORD=
+networks:
+  external:
+  internal:
+    internal: true
