@@ -20,10 +20,10 @@ var (
 	Bind       = ":8080"
 	AllowedIPs = []string{"::1", "127.0.0.1"}
 	Config     = stepin.CAConfig{
-		RootCaName:           "root_ca",
-		RootCaPassword:       "123456",
-		IntermediaCaName:     "intermedia_ca",
-		IntermediaCaPassword: "123_456",
+		RootCaName:             "root_ca",
+		RootCaPassword:         "123456",
+		IntermediateCaName:     "intermediate_ca",
+		IntermediateCaPassword: "123_456",
 	}
 )
 
@@ -59,9 +59,9 @@ func init() {
 	if RootCaPassword != "" {
 		Config.RootCaPassword = RootCaPassword
 	}
-	IntermediaCaPassword := os.Getenv("STEPIN_INTERMEDIA_CA_PASSWORD")
-	if IntermediaCaPassword != "" {
-		Config.IntermediaCaPassword = IntermediaCaPassword
+	IntermediateCaPassword := os.Getenv("STEPIN_INTERMEDIATE_CA_PASSWORD")
+	if IntermediateCaPassword != "" {
+		Config.IntermediateCaPassword = IntermediateCaPassword
 	}
 
 	StepinConfigFolder := os.Getenv("STEPIN_CONFIG_FOLDER")
@@ -137,8 +137,8 @@ func main() {
 		}
 		ctx.FileAttachment(stepin.RootCaCrtPath, path.Base(stepin.RootCaCrtPath))
 	})
-	router.GET("/download-intermedia-ca", func(ctx *gin.Context) {
-		_, err := os.Stat(stepin.IntermediaCaCrtPath)
+	router.GET("/download-intermediate-ca", func(ctx *gin.Context) {
+		_, err := os.Stat(stepin.IntermediateCaCrtPath)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				ErrorPage(ctx, http.StatusNotFound, err)
@@ -147,7 +147,7 @@ func main() {
 			ErrorPage(ctx, http.StatusInternalServerError, err)
 			return
 		}
-		ctx.FileAttachment(stepin.IntermediaCaCrtPath, path.Base(stepin.IntermediaCaCrtPath))
+		ctx.FileAttachment(stepin.IntermediateCaCrtPath, path.Base(stepin.IntermediateCaCrtPath))
 	})
 
 	router.GET("/download", func(ctx *gin.Context) {

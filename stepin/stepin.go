@@ -15,25 +15,25 @@ import (
 )
 
 var (
-	ConfigFolder         = "/etc/stepin"
-	RootCACertName       = "root_ca"
-	IntermediaCACertName = "intermedia_ca"
-	LeafCertFolder       = path.Join(ConfigFolder, "leaf")
-	KeyFolder            = path.Join(ConfigFolder, "key")
+	ConfigFolder           = "/etc/stepin"
+	RootCACertName         = "root_ca"
+	IntermediateCACertName = "intermediate_ca"
+	LeafCertFolder         = path.Join(ConfigFolder, "leaf")
+	KeyFolder              = path.Join(ConfigFolder, "key")
 )
 
 var RootCaCrtPath string
 var RootCaKeyPath string
-var IntermediaCaKeyPath string
-var IntermediaCaCrtPath string
+var IntermediateCaKeyPath string
+var IntermediateCaCrtPath string
 
 func Setup() {
 	LeafCertFolder = path.Join(ConfigFolder, "leaf")
 	KeyFolder = path.Join(ConfigFolder, "key")
 	RootCaCrtPath = path.Join(ConfigFolder, RootCACertName+".crt")
 	RootCaKeyPath = path.Join(KeyFolder, RootCACertName+".key")
-	IntermediaCaCrtPath = path.Join(ConfigFolder, IntermediaCACertName+".crt")
-	IntermediaCaKeyPath = path.Join(KeyFolder, IntermediaCACertName+".key")
+	IntermediateCaCrtPath = path.Join(ConfigFolder, IntermediateCACertName+".crt")
+	IntermediateCaKeyPath = path.Join(KeyFolder, IntermediateCACertName+".key")
 }
 
 func init() {
@@ -53,10 +53,10 @@ func Exec(cmd string, args ...string) (string, error) {
 }
 
 type CAConfig struct {
-	RootCaName           string
-	RootCaPassword       string
-	IntermediaCaName     string
-	IntermediaCaPassword string
+	RootCaName             string
+	RootCaPassword         string
+	IntermediateCaName     string
+	IntermediateCaPassword string
 }
 
 func createPasswordFile(filename, password string) (*os.File, func() error, error) {
@@ -122,12 +122,12 @@ func Initialize(config CAConfig) (err error) {
 		_ = rootCaCleanup()
 	}()
 
-	intermediaCaPasswordFile, intermediaCaCleanup, err := createPasswordFile("stepin_intermedia_ca_password_*.txt", config.IntermediaCaPassword)
+	intermediateCaPasswordFile, intermediateCaCleanup, err := createPasswordFile("stepin_intermediate_ca_password_*.txt", config.IntermediateCaPassword)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		_ = intermediaCaCleanup()
+		_ = intermediateCaCleanup()
 	}()
 
 	if fileExists(RootCaCrtPath) {
@@ -159,14 +159,14 @@ func Initialize(config CAConfig) (err error) {
 		return err
 	}
 
-	if fileExists(IntermediaCaCrtPath) {
-		err = os.Remove(IntermediaCaCrtPath)
+	if fileExists(IntermediateCaCrtPath) {
+		err = os.Remove(IntermediateCaCrtPath)
 		if err != nil {
 			return err
 		}
 	}
-	if fileExists(IntermediaCaKeyPath) {
-		err = os.Remove(IntermediaCaKeyPath)
+	if fileExists(IntermediateCaKeyPath) {
+		err = os.Remove(IntermediateCaKeyPath)
 		if err != nil {
 			return err
 		}
@@ -175,9 +175,9 @@ func Initialize(config CAConfig) (err error) {
 		"step",
 		"certificate",
 		"create",
-		config.IntermediaCaName,
-		IntermediaCaCrtPath,
-		IntermediaCaKeyPath,
+		config.IntermediateCaName,
+		IntermediateCaCrtPath,
+		IntermediateCaKeyPath,
 		"--profile",
 		"intermediate-ca",
 		"--ca",
@@ -187,7 +187,7 @@ func Initialize(config CAConfig) (err error) {
 		"--ca-password-file",
 		rootCaPasswordFile.Name(),
 		"--password-file",
-		intermediaCaPasswordFile.Name(),
+		intermediateCaPasswordFile.Name(),
 	)
 	if err != nil {
 		return err
@@ -200,12 +200,12 @@ func SignCert(config CAConfig, filename, hostname string, keyType string, expire
 	crtPath := path.Join(LeafCertFolder, filename+".crt")
 	keyPath := path.Join(LeafCertFolder, filename+".key")
 
-	intermediaCaPasswordFile, intermediaCaCleanup, err := createPasswordFile("stepin_intermedia_ca_password_*.txt", config.IntermediaCaPassword)
+	intermediateCaPasswordFile, intermediateCaCleanup, err := createPasswordFile("stepin_intermediate_ca_password_*.txt", config.IntermediateCaPassword)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		_ = intermediaCaCleanup()
+		_ = intermediateCaCleanup()
 	}()
 
 	_, err = Exec(
@@ -218,11 +218,11 @@ func SignCert(config CAConfig, filename, hostname string, keyType string, expire
 		"--profile",
 		"leaf",
 		"--ca",
-		IntermediaCaCrtPath,
+		IntermediateCaCrtPath,
 		"--ca-key",
-		IntermediaCaKeyPath,
+		IntermediateCaKeyPath,
 		"--ca-password-file",
-		intermediaCaPasswordFile.Name(),
+		intermediateCaPasswordFile.Name(),
 		"--bundle",
 		"--insecure",
 		"--no-password",
@@ -299,6 +299,6 @@ func RemoveCert(filename string) error {
 func IsInitialized() bool {
 	return fileExists(RootCaCrtPath) &&
 		fileExists(RootCaKeyPath) &&
-		fileExists(IntermediaCaCrtPath) &&
-		fileExists(IntermediaCaKeyPath)
+		fileExists(IntermediateCaCrtPath) &&
+		fileExists(IntermediateCaKeyPath)
 }

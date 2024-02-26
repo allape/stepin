@@ -28,7 +28,7 @@ services:
       - STEPIN_BIND=
       - STEPIN_ALLOWED_IP_FILE=/app/allowed-ips.txt
       - STEPIN_ROOT_CA_PASSWORD=
-      - STEPIN_INTERMEDIA_CA_PASSWORD=
+      - STEPIN_INTERMEDIATE_CA_PASSWORD=
 networks:
   external:
   internal:
