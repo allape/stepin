@@ -267,6 +267,8 @@ func main() {
 		ctx.Redirect(http.StatusSeeOther, "/")
 	})
 
+	log.Println("Server is running on", Bind)
+
 	err := router.Run(Bind)
 	if err != nil {
 		panic(err)
