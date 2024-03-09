@@ -1,3 +1,7 @@
+github.com/allape/gogin-ip-filter v0.0.0-20240309060852-d9c207189e8d h1:9fEcTs29I3vwpFXWsBRLL1pgedt8BLjrIi1gRCekAg4=
+github.com/allape/gogin-ip-filter v0.0.0-20240309060852-d9c207189e8d/go.mod h1:Vvna2ecMSWCCxYJrNY/SXc/3frsmCLcRKwMRd7l3YUQ=
+github.com/allape/gogin-ip-filter v0.0.0-20240309061444-e7cd12c186f3 h1:vR0aDw8j/CR0prJepyVUb+B0ux20FYkEc8pP07Xgjqg=
+github.com/allape/gogin-ip-filter v0.0.0-20240309061444-e7cd12c186f3/go.mod h1:Vvna2ecMSWCCxYJrNY/SXc/3frsmCLcRKwMRd7l3YUQ=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
 github.com/bytedance/sonic v1.10.0-rc/go.mod h1:ElCzW+ufi8qKqNW0FY314xriJhyJhuoJ3gFZdAHF7NM=
 github.com/bytedance/sonic v1.11.0 h1:FwNNv6Vu4z2Onf1++LNzxB/QhitD8wuTdpZzMTGITWo=

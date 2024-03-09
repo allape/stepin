@@ -3,28 +3,31 @@ package main
 import (
 	"errors"
 	"fmt"
+	ipfilter "github.com/allape/gogin-ip-filter"
 	"github.com/allape/stepin/stepin"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"html/template"
 	"log"
 	"net/http"
+	"net/netip"
 	"os"
 	"path"
 	"regexp"
-	"slices"
 	"strings"
 )
 
 var (
-	Bind       = ":8080"
-	AllowedIPs = []string{"::1", "127.0.0.1"}
-	Config     = stepin.CAConfig{
+	Bind   = ":8080"
+	Config = stepin.CAConfig{
 		RootCaName:             "root_ca",
 		RootCaPassword:         "123456",
 		IntermediateCaName:     "intermediate_ca",
 		IntermediateCaPassword: "123_456",
 	}
+
+	Hosts    []string
+	Prefixes []netip.Prefix
 )
 
 var (
@@ -40,20 +43,12 @@ func init() {
 
 	StepinAllowedIpFile := os.Getenv("STEPIN_ALLOWED_IP_FILE")
 	if StepinAllowedIpFile != "" {
-		ips, err := os.ReadFile(StepinAllowedIpFile)
-		if err == nil {
-			AllowedIPs = append(AllowedIPs, strings.Split(string(ips), "\n")...)
+		var err error
+		Prefixes, Hosts, err = ipfilter.ReadFile(StepinAllowedIpFile)
+		if err != nil {
+			panic(err)
 		}
 	}
-
-	var ips []string
-	for _, ip := range AllowedIPs {
-		ip = strings.TrimSpace(ip)
-		if ip != "" && !slices.Contains(ips, ip) {
-			ips = append(ips, ip)
-		}
-	}
-	AllowedIPs = ips
 
 	RootCaPassword := os.Getenv("STEPIN_ROOT_CA_PASSWORD")
 	if RootCaPassword != "" {
@@ -105,12 +100,7 @@ type CertificateForm struct {
 func main() {
 	router := gin.Default()
 
-	router.Use(func(ctx *gin.Context) {
-		if !slices.Contains[[]string](AllowedIPs, ctx.ClientIP()) {
-			ErrorPage(ctx, http.StatusUnauthorized, errors.New("permission denied"))
-			ctx.Abort()
-		}
-	})
+	router.Use(ipfilter.New(Prefixes, Hosts, nil))
 
 	router.SetFuncMap(template.FuncMap{
 		"urlescaper":  template.URLQueryEscaper,
