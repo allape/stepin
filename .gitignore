@@ -1,0 +1,5 @@
+.idea
+.vscode
+
+/assets
+/data.db*

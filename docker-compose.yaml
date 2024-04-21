@@ -1,0 +1,21 @@
+name: stepin
+services:
+  app:
+    image: allape/stepin:latest
+#    build:
+#      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./data.db:/app/data.db
+      - ./ui/dist:/app/assets
+    ports:
+      - "8080:8080"
+    environment:
+      http_proxy: http://host.docker.internal:1080
+      https_proxy: http://host.docker.internal:1080
+      no_proxy: localhost,127.0.0.1,192.*.*.*,172.*.*.*
+      GIN_MODE: release
+      STEPIN_MODE: release
+      STEPIN_LISTEN: ":8080"
+      STEPIN_ASSETS_FOLDER: "/app/assets"
+      STEPIN_DATABASE_FILENAME: "data.db"
