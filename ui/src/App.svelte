@@ -1,16 +1,27 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import ajax from './api/http';
+	import { getCertList } from './api/cert';
+	import CertModalButton from './lib/CertModalButton.svelte';
 
-	let list: string[] = [];
+	interface Cert {
+		key: string;
+		name: string;
+		inspection: string;
+	}
+
+	let certs: Cert[] = [];
 
 	async function getList() {
-		list = (await ajax<string[]>('/leaf')) || [];
+		certs = await getCertList();
 	}
 
 	onMount(() => {
 		getList().then();
 	});
+
+	function handleCertChange() {
+		getList().then();
+	}
 </script>
 
 <style lang="scss">
@@ -39,10 +50,20 @@
         border-collapse: collapse;
         width: 100%;
 
+				thead {
+					position: sticky;
+					top: 0;
+					left: 0;
+					background-color: lightgray;
+					color: black;
+				}
+
         th, td {
           border: 1px solid darkgray;
           padding: 3px 5px;
-          white-space: nowrap;
+					&.sep {
+						background-color: lightgray;
+					}
         }
       }
     }
@@ -55,7 +76,9 @@
 			<button on:click={() => window.location.reload()}>Reload</button>
 		</div>
 		<div>
-			<button on:click={() => window.location.reload()}>Reload</button>
+			<CertModalButton certType="root-ca" on:change={handleCertChange} />
+			<CertModalButton certType="intermediate-ca" on:change={handleCertChange} />
+			<CertModalButton certType="leaf" on:change={handleCertChange} />
 		</div>
 	</div>
 	<div class="tableWrapper">
@@ -63,16 +86,27 @@
 			<thead>
 			<tr>
 				<th>Key</th>
-				<th>Value</th>
+				<th>Name</th>
 			</tr>
 			</thead>
 			<tbody>
-			{#each list as row}
+			{#each certs as cert (cert.key)}
 				<tr>
-					<td>{row}</td>
+					<td>{cert.key}</td>
+					<td>{cert.name}</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<pre>{cert.inspection}</pre>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2" class="sep"></td>
 				</tr>
 			{/each}
 			</tbody>
 		</table>
 	</div>
 </div>
+
+

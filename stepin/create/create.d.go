@@ -22,6 +22,13 @@ const (
 	SelfSigned     Profile = "self-signed"
 )
 
+var AllProfiles = []Profile{
+	RootCA,
+	IntermediateCA,
+	Leaf,
+	SelfSigned,
+}
+
 type KeyType string
 
 const (

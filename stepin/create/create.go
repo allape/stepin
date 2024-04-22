@@ -35,8 +35,8 @@ func New(subject OptionSubject, options ...CreationOption) (stepin.Inspection, e
 }
 
 type PrimaryOptions struct {
-	Subject  SubjectName
-	Password Password
+	Subject  SubjectName `json:"subject"`
+	Password Password    `json:"password"`
 }
 
 func NewRaw(opt PrimaryOptions, options ...CreationOption) (stepin.Inspection, Crt, Key, error) {
@@ -51,6 +51,7 @@ func NewRaw(opt PrimaryOptions, options ...CreationOption) (stepin.Inspection, C
 		defer func() {
 			_ = disposePassFile()
 		}()
+		_ = passFile.Close()
 		passFilePath = PasswordFile(passFile.Name())
 	}
 
@@ -61,6 +62,7 @@ func NewRaw(opt PrimaryOptions, options ...CreationOption) (stepin.Inspection, C
 	defer func() {
 		_ = disposeCertFile()
 	}()
+	_ = certFile.Close()
 
 	keyFile, disposeKeyFile, err := stepin.NewTmpFile("stepin_key_*.key", nil)
 	if err != nil {
@@ -69,12 +71,17 @@ func NewRaw(opt PrimaryOptions, options ...CreationOption) (stepin.Inspection, C
 	defer func() {
 		_ = disposeKeyFile()
 	}()
+	_ = keyFile.Close()
 
 	inspection, err := New(OptionSubject{
 		Subject: subject,
 		CrtFile: CrtFile(certFile.Name()),
 		KeyFile: KeyFile(keyFile.Name()),
-	}, append(options, OptionPasswordFile{PasswordFile: passFilePath})...)
+	}, append(
+		options,
+		OptionPasswordFile{PasswordFile: passFilePath},
+		OptionForce{Force: true},
+	)...)
 
 	if err != nil {
 		return inspection, nil, nil, err
@@ -104,9 +111,9 @@ func NewRootCA(
 
 type RootlessOptions struct {
 	PrimaryOptions
-	RootCaCrt    Crt
-	RootCaKey    Key
-	RootPassword Password
+	RootCaCrt    Crt      `json:"rootCaCrt"`
+	RootCaKey    Key      `json:"rootCaKey"`
+	RootPassword Password `json:"rootPassword"`
 }
 
 func NewRootless(
@@ -120,6 +127,7 @@ func NewRootless(
 	defer func() {
 		_ = disRCCF()
 	}()
+	_ = rootCaCrtFile.Close()
 
 	rootCaKeyFile, disRCKF, err := stepin.NewTmpFile("stepin_root_ca_key_*.txt", opt.RootCaKey)
 	if err != nil {
@@ -128,6 +136,7 @@ func NewRootless(
 	defer func() {
 		_ = disRCKF()
 	}()
+	_ = rootCaKeyFile.Close()
 
 	rootCaPasswordFile, disRCPF, err := stepin.NewTmpFile("stepin_root_ca_password_*.txt", []byte(opt.RootPassword))
 	if err != nil {
@@ -136,6 +145,7 @@ func NewRootless(
 	defer func() {
 		_ = disRCPF()
 	}()
+	_ = rootCaPasswordFile.Close()
 
 	return NewRaw(
 		opt.PrimaryOptions,

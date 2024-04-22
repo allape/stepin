@@ -7,7 +7,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/nalgeon/redka"
 	"log"
-	"net/http"
 )
 
 const Tag = "[stepin]"
@@ -43,18 +42,10 @@ func main() {
 		server.Use(cors.Default())
 	}
 
-	server.GET("/leaf", func(c *gin.Context) {
-		dbKeys, err := db.Key().Keys("*")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
-			return
-		}
-		var keys []string
-		for _, key := range dbKeys {
-			keys = append(keys, key.Key)
-		}
-		c.JSON(http.StatusOK, R[[]string]{"0", "OK", keys})
-	})
+	err = SetupStepinServer(server, db)
+	if err != nil {
+		log.Fatalln(Tag, err)
+	}
 
 	server.StaticFile("/", IndexHTML)
 	server.StaticFile("/index", IndexHTML)

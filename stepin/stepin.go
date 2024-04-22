@@ -15,6 +15,7 @@ func Exec(cmd string, args ...string) (string, error) {
 	defer cancel()
 	command := exec.CommandContext(ctx, cmd, args...)
 	output, err := command.CombinedOutput()
+	log.Println("Command output:", string(output))
 	if err != nil {
 		return "", err
 	}
@@ -33,7 +34,7 @@ func NewTmpFile(filename string, content []byte) (*os.File, DisposeFunc, error) 
 			_ = os.Remove(tmpFile.Name())
 			return nil, nil, err
 		}
-		if n != len([]byte(content)) {
+		if n != len(content) {
 			return nil, nil, fmt.Errorf("write %d bytes, but expect %d bytes", n, len([]byte(content)))
 		}
 	}

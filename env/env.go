@@ -5,10 +5,16 @@ import "os"
 type EnvarName string
 
 const (
-	StepinMode             EnvarName = "STEPIN_MODE"
-	StepinListen           EnvarName = "STEPIN_LISTEN"
-	StepinAssetsFolder     EnvarName = "STEPIN_ASSETS_FOLDER"
+	StepinMode         EnvarName = "STEPIN_MODE"
+	StepinListen       EnvarName = "STEPIN_LISTEN"
+	StepinAssetsFolder EnvarName = "STEPIN_ASSETS_FOLDER"
+
 	StepinDatabaseFilename EnvarName = "STEPIN_DATABASE_FILENAME"
+	StepinDatabaseSalt     EnvarName = "STEPIN_DATABASE_SALT"
+	StepinDatabasePassword EnvarName = "STEPIN_DATABASE_PASSWORD"
+
+	StepinRootCAPassword         EnvarName = "STEPIN_ROOT_CA_PASSWORD"
+	StepinIntermediateCAPassword EnvarName = "STEPIN_INTERMEDIATE_CA_PASSWORD"
 )
 
 func Get(envar EnvarName, defaultValue string) string {
