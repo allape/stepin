@@ -29,7 +29,7 @@ func Sha256ToHexString(content []byte) HexString {
 }
 
 func Sha256ToHexStringFromString(content string) HexString {
-	return HexString(strings.ToUpper(hex.EncodeToString(Sha256([]byte(content)))))
+	return Sha256ToHexString([]byte(content))
 }
 
 func Encode(plain, salt []byte) ([]byte, error) {
