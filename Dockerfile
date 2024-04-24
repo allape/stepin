@@ -37,6 +37,8 @@ FROM alpine:3.19.1
 
 WORKDIR /app
 
+RUN apk update && apk add step-cli
+
 COPY --from=ui_builder /build/dist assets
 COPY --from=builder /build/app app
 
@@ -44,5 +46,4 @@ EXPOSE 8080
 
 CMD [ "/app/app" ]
 
-
-
+# docker build -t allape/stepin .

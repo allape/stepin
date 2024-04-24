@@ -6,8 +6,8 @@ services:
 #      dockerfile: Dockerfile
     restart: unless-stopped
     volumes:
-      - ./data.db:/app/data.db
-      - ./ui/dist:/app/assets
+      - ./database:/app/database
+    #      - ./ui/dist:/app/assets
     ports:
       - "8080:8080"
     environment:
@@ -18,4 +18,8 @@ services:
       STEPIN_MODE: release
       STEPIN_LISTEN: ":8080"
       STEPIN_ASSETS_FOLDER: "/app/assets"
-      STEPIN_DATABASE_FILENAME: "data.db"
+      STEPIN_DATABASE_FILENAME: "/app/database/data.db"
+      STEPIN_DATABASE_SALT: ""
+      STEPIN_DATABASE_PASSWORD: ""
+      STEPIN_ROOT_CA_PASSWORD: "123456"
+      STEPIN_INTERMEDIATE_CA_PASSWORD: "456789"
