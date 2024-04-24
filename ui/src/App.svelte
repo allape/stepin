@@ -3,12 +3,6 @@
 	import { getCertList } from './api/cert';
 	import CertModalButton from './lib/CertModalButton.svelte';
 
-	interface Cert {
-		key: string;
-		name: string;
-		inspection: string;
-	}
-
 	let certs: Cert[] = [];
 
 	async function getList() {
@@ -76,9 +70,9 @@
 			<button on:click={() => window.location.reload()}>Reload</button>
 		</div>
 		<div>
-			<CertModalButton certType="root-ca" on:change={handleCertChange} />
-			<CertModalButton certType="intermediate-ca" on:change={handleCertChange} />
-			<CertModalButton certType="leaf" on:change={handleCertChange} />
+			<CertModalButton profile="root-ca" on:change={handleCertChange} />
+			<CertModalButton profile="intermediate-ca" on:change={handleCertChange} />
+			<CertModalButton profile="leaf" on:change={handleCertChange} />
 		</div>
 	</div>
 	<div class="tableWrapper">
@@ -86,22 +80,24 @@
 			<thead>
 			<tr>
 				<th>Key</th>
+				<th>Profile</th>
 				<th>Name</th>
 			</tr>
 			</thead>
 			<tbody>
-			{#each certs as cert (cert.key)}
+			{#each certs as cert (cert.id)}
 				<tr>
-					<td>{cert.key}</td>
+					<td>{cert.id}</td>
+					<td>{cert.profile}</td>
 					<td>{cert.name}</td>
 				</tr>
 				<tr>
-					<td colspan="2">
+					<td colspan="3">
 						<pre>{cert.inspection}</pre>
 					</td>
 				</tr>
 				<tr>
-					<td colspan="2" class="sep"></td>
+					<td colspan="3" class="sep"></td>
 				</tr>
 			{/each}
 			</tbody>

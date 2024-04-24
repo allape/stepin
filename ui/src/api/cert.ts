@@ -1,6 +1,6 @@
 import ajax from './http';
 
 
-export function getCertList(type: CertType | "" = ""): Promise<Cert[]> {
-	return ajax<Cert[]>(`/cert?type=${type}`).then(res=> res || []);
+export function getCertList(profile: CertProfile | "" = ""): Promise<Cert[]> {
+	return ajax<Cert[]>(`/cert?profile=${profile}`).then(res=> res || []);
 }

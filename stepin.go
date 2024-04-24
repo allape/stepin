@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/allape/stepin/env"
 	"github.com/allape/stepin/salt"
@@ -10,15 +11,160 @@ import (
 	"github.com/nalgeon/redka"
 	"net/http"
 	"slices"
-	"strings"
 	"time"
 )
 
-func handleCertType(certType create.Profile) (create.Profile, error) {
-	if certType != "" && !slices.Contains(create.AllProfiles, certType) {
-		return "", fmt.Errorf("invalid certificate type")
+var (
+	CrtSalt = []byte("_crt_salt")
+	KeySalt = []byte("_key_salt")
+	TxtSalt = []byte("_txt_salt")
+)
+
+type (
+	DBKey  string
+	CertID DBKey
+
+	Cert struct {
+		ID         CertID             `json:"id"`
+		Profile    create.Profile     `json:"profile"`
+		Name       create.SubjectName `json:"name"`
+		Crt        create.Crt         `json:"crt"`
+		Key        create.Key         `json:"key"`
+		Inspection stepin.Inspection  `json:"inspection"`
 	}
-	return certType, nil
+
+	SaltyCert struct {
+		ID         CertID         `json:"id"`
+		Profile    create.Profile `json:"profile"`
+		Name       salt.HexString `json:"name"`
+		Crt        salt.HexString `json:"crt"`
+		Key        salt.HexString `json:"key"`
+		Inspection salt.HexString `json:"inspection"`
+	}
+)
+
+func BuildDBKey(profile create.Profile, name create.SubjectName) DBKey {
+	saltyName, _ := salt.Encode([]byte(name), TxtSalt)
+	return DBKey(fmt.Sprintf("cert:%s:%s", profile, salt.Sha256ToHexString(saltyName)))
+}
+
+func BuildProfileDBKeyPattern(profile create.Profile) string {
+	return fmt.Sprintf("cert:%s:*", profile)
+}
+
+func BuildAllCertDBKeyPattern() string {
+	return "cert:*"
+}
+
+func GetCert(key DBKey, db *redka.DB) (*Cert, error) {
+	value, err := db.Str().Get(string(key))
+	if err != nil {
+		return nil, err
+	}
+
+	var saltyCert SaltyCert
+	err = json.Unmarshal([]byte(value.String()), &saltyCert)
+	if err != nil {
+		return nil, err
+	}
+
+	cert := &Cert{
+		ID:      saltyCert.ID,
+		Profile: saltyCert.Profile,
+	}
+
+	name, err := salt.DecodeFromHexStringToString(saltyCert.Name, TxtSalt)
+	if err != nil {
+		return nil, err
+	}
+	cert.Name = create.SubjectName(name)
+
+	inspection, err := salt.DecodeFromHexStringToString(saltyCert.Inspection, TxtSalt)
+	if err != nil {
+		return nil, err
+	}
+	cert.Inspection = stepin.Inspection(inspection)
+
+	cert.Crt, err = salt.DecodeFromHexString(saltyCert.Crt, CrtSalt)
+	if err != nil {
+		return nil, err
+	}
+
+	cert.Key, err = salt.DecodeFromHexString(saltyCert.Key, KeySalt)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, nil
+}
+
+func SetCert(key DBKey, cert *Cert, db *redka.DB) (*SaltyCert, error) {
+	saltyName, err := salt.EncodeToHexString([]byte(cert.Name), TxtSalt)
+	if err != nil {
+		return nil, err
+	}
+
+	saltyCrt, err := salt.EncodeToHexString(cert.Crt, CrtSalt)
+	if err != nil {
+		return nil, err
+	}
+
+	saltyKey, err := salt.EncodeToHexString(cert.Key, KeySalt)
+	if err != nil {
+		return nil, err
+	}
+
+	saltyInspection, err := salt.EncodeToHexString([]byte(cert.Inspection), TxtSalt)
+	if err != nil {
+		return nil, err
+	}
+
+	cert.ID = CertID(key)
+	saltyCert := SaltyCert{
+		ID:         cert.ID,
+		Profile:    cert.Profile,
+		Name:       saltyName,
+		Crt:        saltyCrt,
+		Key:        saltyKey,
+		Inspection: saltyInspection,
+	}
+
+	value, err := json.Marshal(saltyCert)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Str().Set(string(key), value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &saltyCert, nil
+
+}
+
+type (
+	GetCertBody struct {
+		ID         CertID             `json:"id"`
+		Profile    create.Profile     `json:"profile"`
+		Name       create.SubjectName `json:"name"`
+		Inspection stepin.Inspection  `json:"inspection"`
+	}
+
+	PutCertBody struct {
+		Name           create.SubjectName `json:"name"`
+		Pass           create.Password    `json:"pass"`
+		Years          int64              `json:"years"`
+		RootCaID       CertID             `json:"rootCaID"`
+		RootCaPassword create.Password    `json:"rootCaPassword"`
+	}
+)
+
+func handleCertProfile(profile create.Profile) (create.Profile, error) {
+	if profile != "" && !slices.Contains(create.AllProfiles, profile) {
+		return "", fmt.Errorf("invalid certificate profile")
+	}
+	return profile, nil
 }
 
 func handleRootCAPassword(password create.Password) (create.Password, error) {
@@ -43,56 +189,10 @@ func handleIntermediateCAPassword(password create.Password) (create.Password, er
 	return password, nil
 }
 
-type GetCertBody struct {
-	Key        string             `json:"key"`
-	Name       create.SubjectName `json:"name"`
-	Inspection stepin.Inspection  `json:"inspection"`
-}
-
-type PutCertBody struct {
-	Name           create.SubjectName `json:"name"`
-	Pass           create.Password    `json:"pass"`
-	Years          int64              `json:"years"`
-	RootCaName     string             `json:"rootCaName"`
-	RootCaPassword create.Password    `json:"rootCaPassword"`
-}
-
-func GetCert(key string, db *redka.DB) (create.SubjectName, stepin.Inspection, create.Crt, create.Key, error) {
-	value, err := db.Str().Get(key)
-	if err != nil {
-		return "", "", nil, nil, err
-	}
-
-	segments := strings.Split(value.String(), ",")
-	if len(segments) != 3 {
-		return "", "", nil, nil, fmt.Errorf("invalid content for %s", key)
-	}
-
-	name, err := salt.DecodeFromHexStringToString(salt.HexString(strings.Split(key, ":")[2]))
-	if err != nil {
-		return "", "", nil, nil, err
-	}
-
-	crtBytes, err := salt.DecodeFromHexString(salt.HexString(segments[0]))
-	if err != nil {
-		return "", "", nil, nil, err
-	}
-	keyBytes, err := salt.DecodeFromHexString(salt.HexString(segments[1]))
-	if err != nil {
-		return "", "", nil, nil, err
-	}
-	inspection, err := salt.DecodeFromHexStringToString(salt.HexString(segments[2]))
-	if err != nil {
-		return "", "", nil, nil, err
-	}
-
-	return create.SubjectName(name), stepin.Inspection(inspection), crtBytes, keyBytes, nil
-}
-
 func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 	server.GET("/cert", func(c *gin.Context) {
-		ct := c.Query("type")
-		certType, err := handleCertType(create.Profile(ct))
+		ct := c.Query("profile")
+		profile, err := handleCertProfile(create.Profile(ct))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, R[any]{"-1", err.Error(), nil})
 			return
@@ -100,10 +200,10 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 
 		var dbKeys []redka.Key
 
-		if certType != "" {
-			dbKeys, err = db.Key().Keys(fmt.Sprintf("cert:%s:*", certType))
+		if profile != "" {
+			dbKeys, err = db.Key().Keys(BuildProfileDBKeyPattern(profile))
 		} else {
-			dbKeys, err = db.Key().Keys("cert:*")
+			dbKeys, err = db.Key().Keys(BuildAllCertDBKeyPattern())
 		}
 
 		if err != nil {
@@ -113,30 +213,31 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 
 		var certs []GetCertBody
 		for _, key := range dbKeys {
-			name, inspection, _, _, err := GetCert(key.Key, db)
+			cert, err := GetCert(DBKey(key.Key), db)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
 				return
 			}
 
 			certs = append(certs, GetCertBody{
-				Key:        key.Key,
-				Name:       name,
-				Inspection: inspection,
+				ID:         cert.ID,
+				Profile:    cert.Profile,
+				Name:       cert.Name,
+				Inspection: cert.Inspection,
 			})
 		}
 		c.JSON(http.StatusOK, R[[]GetCertBody]{"0", "OK", certs})
 	})
 
-	server.PUT("/cert/:type", func(c *gin.Context) {
-		ct := c.Param("type")
-		certType, err := handleCertType(create.Profile(ct))
+	server.PUT("/cert/:profile", func(c *gin.Context) {
+		ct := c.Param("profile")
+		profile, err := handleCertProfile(create.Profile(ct))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, R[any]{"-1", err.Error(), nil})
 			return
 		}
-		if certType == "" {
-			c.JSON(http.StatusBadRequest, R[any]{"-1", "invalid certificate type", nil})
+		if profile == "" {
+			c.JSON(http.StatusBadRequest, R[any]{"-1", "invalid certificate profile", nil})
 			return
 		}
 
@@ -161,7 +262,7 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 			})
 		}
 
-		switch certType {
+		switch profile {
 		case create.RootCA:
 			body.Pass, err = handleRootCAPassword(body.Pass)
 			if err != nil {
@@ -181,7 +282,11 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 				c.JSON(http.StatusBadRequest, R[any]{"-1", err.Error(), nil})
 				return
 			}
-			_, _, rootCrt, rootKey, err := GetCert(body.RootCaName, db)
+			if body.RootCaID == "" {
+				c.JSON(http.StatusBadRequest, R[any]{"-1", "parent ca is required for intermediate cert", nil})
+				return
+			}
+			cert, err := GetCert(DBKey(body.RootCaID), db)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
 				return
@@ -196,20 +301,24 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 					Subject:  body.Name,
 					Password: body.Pass,
 				},
-				RootCaCrt:    rootCrt,
-				RootCaKey:    rootKey,
+				RootCaCrt:    cert.Crt,
+				RootCaKey:    cert.Key,
 				RootPassword: rootPassword,
 			}, options...)
 		case create.Leaf:
-			_, _, rootCrt, rootKey, err := GetCert(body.RootCaName, db)
+			if body.RootCaID == "" {
+				c.JSON(http.StatusBadRequest, R[any]{"-1", "parent ca is required for leaf cert", nil})
+				return
+			}
+
+			cert, err := GetCert(DBKey(body.RootCaID), db)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
 				return
 			}
 
 			var rootPassword create.Password
-
-			if strings.HasPrefix(body.RootCaName, fmt.Sprintf("cert:%s", create.RootCA)) {
+			if cert.Profile == create.RootCA {
 				rootPassword, err = handleRootCAPassword(body.RootCaPassword)
 			} else {
 				rootPassword, err = handleIntermediateCAPassword(body.RootCaPassword)
@@ -225,8 +334,8 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 					// no password on leaf
 					//Password: body.Pass,
 				},
-				RootCaCrt:    rootCrt,
-				RootCaKey:    rootKey,
+				RootCaCrt:    cert.Crt,
+				RootCaKey:    cert.Key,
 				RootPassword: rootPassword,
 			}, options...)
 		}
@@ -236,45 +345,24 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 			return
 		}
 
-		saltyCrt, err := salt.EncodeToHexString(crt)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
-			return
+		cert := &Cert{
+			Profile:    profile,
+			Name:       body.Name,
+			Crt:        crt,
+			Key:        key,
+			Inspection: inspection,
 		}
-
-		saltyKey, err := salt.EncodeToHexString(key)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
-			return
-		}
-
-		saltyInspection, err := salt.EncodeToHexString([]byte(inspection))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
-			return
-		}
-
-		saltyName, err := salt.EncodeToHexString([]byte(body.Name))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
-			return
-		}
-
-		value := fmt.Sprintf(
-			"%s,%s,%s",
-			saltyCrt,
-			saltyKey,
-			saltyInspection,
+		_, err = SetCert(
+			BuildDBKey(profile, body.Name),
+			cert,
+			db,
 		)
-
-		keyName := fmt.Sprintf("cert:%s:%s", certType, saltyName)
-		err = db.Str().Set(keyName, value)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
 			return
 		}
 
-		c.JSON(http.StatusOK, R[string]{"0", "OK", keyName})
+		c.JSON(http.StatusOK, R[CertID]{"0", "OK", cert.ID})
 	})
 
 	return nil

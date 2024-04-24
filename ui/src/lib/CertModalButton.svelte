@@ -2,7 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { getCertList } from '../api/cert';
 	import ajax from '../api/http';
-	import { CertTypes } from '../config/cert';
+	import { CertProfiles } from '../config/cert';
 	import Modal from './Modal.svelte';
 
 	const dispatch = createEventDispatcher();
@@ -11,11 +11,11 @@
 		subjectName: HTMLInputElement;
 		pass: HTMLInputElement;
 		years: HTMLInputElement;
-		rootCaName: HTMLSelectElement;
+		rootCaID: HTMLSelectElement;
 		rootCaPassword: HTMLInputElement;
 	}
 
-	export let certType: CertType = 'leaf';
+	export let profile: CertProfile = 'leaf';
 
 	let open: boolean = false;
 	let formEle: HTMLFormElement | null = null;
@@ -26,7 +26,7 @@
 			const form = formEle as HTMLFormElementX;
 			if (form) {
 				form.reset();
-				switch (certType) {
+				switch (profile) {
 					case 'root-ca':
 						form.subjectName.value = 'root';
 						form.years.value = '10';
@@ -41,7 +41,7 @@
 				}
 			}
 			getCertList().then(list => {
-				certs = list;
+				certs = list.filter(cert => cert.profile === 'root-ca' || cert.profile === 'intermediate-ca');
 			});
 		}
 	}
@@ -56,12 +56,12 @@
 		const body: PutCertBody = {
 			name: form.subjectName.value,
 			pass: form.pass.value,
-			rootCaName: form.rootCaName.value,
-			rootCaPassword: form.rootCaPassword.value,
+			rootCaID: form.rootCaID?.value,
+			rootCaPassword: form.rootCaPassword?.value,
 			years: Number.parseInt(form.years.value, 10) || 0
 		};
 
-		const name = await ajax<string>(`/cert/${certType}`, {
+		const name = await ajax<string>(`/cert/${profile}`, {
 			method: 'PUT',
 			body: JSON.stringify(body)
 		});
@@ -100,7 +100,7 @@
   }
 </style>
 
-<button on:click={() => open = true}>Add New {CertTypes[certType]} Cert</button>
+<button on:click={() => open = true}>Add New {CertProfiles[profile]} Cert</button>
 <Modal bind:open>
 	<div class="wrapper">
 		<form bind:this={formEle} on:submit|preventDefault>
@@ -118,13 +118,13 @@
 					<td><label for="years">Life Span(Year):</label></td>
 					<td><input id="years" name="years" type="number" min="0" step="1"></td>
 				</tr>
-				{#if certType !== 'root-ca'}
+				{#if profile !== 'root-ca'}
 					<tr>
-						<td><label for="RootCAName">Root CA*:</label></td>
+						<td><label for="RootCaID">Root CA*:</label></td>
 						<td>
-							<select id="RootCAName" name="rootCaName">
+							<select id="RootCaID" name="rootCaID">
 								{#each certs as cert}
-									<option value={cert.key}>{cert.key.replace(/^(cert:.+:).+/gi, `$1${cert.name}`)}</option>
+									<option value={cert.id}>{cert.profile}:{cert.name}</option>
 								{/each}
 							</select>
 						</td>

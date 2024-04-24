@@ -28,14 +28,18 @@ func Sha256ToHexString(content []byte) HexString {
 	return HexString(strings.ToUpper(hex.EncodeToString(Sha256(content))))
 }
 
-func Encode(plain []byte) ([]byte, error) {
+func Sha256ToHexStringFromString(content string) HexString {
+	return HexString(strings.ToUpper(hex.EncodeToString(Sha256([]byte(content)))))
+}
+
+func Encode(plain, salt []byte) ([]byte, error) {
 	iv := make([]byte, aes.BlockSize)
 	_, err := rand.Read(iv)
 	if err != nil {
 		return nil, err
 	}
 
-	password := Sha256([]byte(Salt + Password))
+	password := Sha256(append([]byte(Salt+Password), salt...))
 
 	paddingLength := aes.BlockSize - (len(plain) % aes.BlockSize)
 	plain = append(plain, bytes.Repeat([]byte{byte(paddingLength)}, paddingLength)...)
@@ -56,12 +60,12 @@ func Encode(plain []byte) ([]byte, error) {
 	return append(iv, content...), nil
 }
 
-func Decode(content []byte) ([]byte, error) {
+func Decode(content, salt []byte) ([]byte, error) {
 	if len(content)%aes.BlockSize != 0 || len(content) < aes.BlockSize*2 {
 		return nil, errors.New("invalid content length")
 	}
 
-	password := Sha256([]byte(Salt + Password))
+	password := Sha256(append([]byte(Salt+Password), salt...))
 
 	iv := content[:aes.BlockSize]
 	content = content[aes.BlockSize:]
@@ -84,28 +88,28 @@ func Decode(content []byte) ([]byte, error) {
 	return plain[:len(plain)-int(paddingSize)], nil
 }
 
-func EncodeToHexString(plain []byte) (HexString, error) {
-	content, err := Encode(plain)
+func EncodeToHexString(plain, salt []byte) (HexString, error) {
+	content, err := Encode(plain, salt)
 	if err != nil {
 		return "", err
 	}
 	return HexString(strings.ToUpper(hex.EncodeToString(content))), nil
 }
 
-func DecodeFromHexString(hexStr HexString) ([]byte, error) {
+func DecodeFromHexString(hexStr HexString, salt []byte) ([]byte, error) {
 	content, err := hex.DecodeString(string(hexStr))
 	if err != nil {
 		return nil, err
 	}
-	plain, err := Decode(content)
+	plain, err := Decode(content, salt)
 	if err != nil {
 		return nil, err
 	}
 	return plain, nil
 }
 
-func DecodeFromHexStringToString(hexStr HexString) (string, error) {
-	plain, err := DecodeFromHexString(hexStr)
+func DecodeFromHexStringToString(hexStr HexString, salt []byte) (string, error) {
+	plain, err := DecodeFromHexString(hexStr, salt)
 	if err != nil {
 		return "", err
 	}

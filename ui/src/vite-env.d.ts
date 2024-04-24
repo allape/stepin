@@ -1,10 +1,11 @@
 /// <reference types="svelte" />
 /// <reference types="vite/client" />
 
-type CertType = 'root-ca' | 'intermediate-ca' | 'leaf';
+type CertProfile = 'root-ca' | 'intermediate-ca' | 'leaf';
 
 interface Cert {
-	key: string;
+	id: string;
+	profile: string;
 	name: string;
 	inspection: string;
 }
@@ -13,7 +14,7 @@ interface PutCertBody {
 	name: string;
 	pass: string;
 	years?: number;
-	rootCaName?: string;
+	rootCaID?: string;
 	rootCaPassword?: string;
 }
 
