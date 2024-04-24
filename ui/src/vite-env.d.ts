@@ -5,7 +5,7 @@ type CertProfile = 'root-ca' | 'intermediate-ca' | 'leaf';
 
 interface Cert {
 	id: string;
-	profile: string;
+	profile: CertProfile;
 	name: string;
 	inspection: string;
 }

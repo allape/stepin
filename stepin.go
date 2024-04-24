@@ -10,8 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nalgeon/redka"
 	"net/http"
+	"net/url"
 	"slices"
+	"strings"
 	"time"
+	"unicode"
 )
 
 var (
@@ -60,6 +63,10 @@ func GetCert(key DBKey, db *redka.DB) (*Cert, error) {
 	value, err := db.Str().Get(string(key))
 	if err != nil {
 		return nil, err
+	}
+
+	if !value.Exists() {
+		return nil, fmt.Errorf("cert not found")
 	}
 
 	var saltyCert SaltyCert
@@ -140,8 +147,15 @@ func SetCert(key DBKey, cert *Cert, db *redka.DB) (*SaltyCert, error) {
 	}
 
 	return &saltyCert, nil
-
 }
+
+type DownloadType string
+
+var (
+	DownloadCRT       DownloadType = "crt"
+	DownloadKey       DownloadType = "key"
+	DownloadableTypes              = []DownloadType{DownloadCRT, DownloadKey}
+)
 
 type (
 	GetCertBody struct {
@@ -155,6 +169,7 @@ type (
 		Name           create.SubjectName `json:"name"`
 		Pass           create.Password    `json:"pass"`
 		Years          int64              `json:"years"`
+		KeyType        create.KeyType     `json:"keyType"`
 		RootCaID       CertID             `json:"rootCaID"`
 		RootCaPassword create.Password    `json:"rootCaPassword"`
 	}
@@ -229,6 +244,41 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 		c.JSON(http.StatusOK, R[[]GetCertBody]{"0", "OK", certs})
 	})
 
+	server.GET("/cert/:crtOrKey/:id", func(c *gin.Context) {
+		crtOrKey := c.Param("crtOrKey")
+		if !slices.Contains(DownloadableTypes, DownloadType(crtOrKey)) {
+			c.JSON(http.StatusBadRequest, R[any]{"-1", "invalid download type", nil})
+			return
+		}
+
+		id := c.Param("id")
+		cert, err := GetCert(DBKey(id), db)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
+			return
+		}
+
+		var data []byte
+		switch DownloadType(crtOrKey) {
+		case DownloadCRT:
+			data = cert.Crt
+		case DownloadKey:
+			if cert.Profile == create.RootCA || cert.Profile == create.IntermediateCA {
+				c.JSON(http.StatusBadRequest, R[any]{"-1", "root/intermediate ca key is not downloadable", nil})
+				return
+			}
+			data = cert.Key
+		}
+
+		dataAttachment(
+			c,
+			http.StatusOK,
+			"application/octet-stream",
+			data,
+			fmt.Sprintf("%s.%s", cert.Name, crtOrKey),
+		)
+	})
+
 	server.PUT("/cert/:profile", func(c *gin.Context) {
 		ct := c.Param("profile")
 		profile, err := handleCertProfile(create.Profile(ct))
@@ -248,19 +298,42 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 			return
 		}
 
-		var (
-			inspection stepin.Inspection
-			crt        create.Crt
-			key        create.Key
-		)
+		if body.Name == "" {
+			c.JSON(http.StatusBadRequest, R[any]{"-1", "name is required", nil})
+			return
+		}
+
+		dbKey := BuildDBKey(profile, body.Name)
+		_, err = GetCert(dbKey, db)
+		if err == nil {
+			c.JSON(http.StatusBadRequest, R[any]{"-1", "certificate already exists", nil})
+			return
+		}
 
 		var options []create.CreationOption
+
+		if body.KeyType != "" {
+			if slices.Contains(create.AllKeyTypes, body.KeyType) {
+				options = append(options, create.OptionKeyType{
+					KTY: body.KeyType,
+				})
+			} else {
+				c.JSON(http.StatusBadRequest, R[any]{"-1", "invalid key type", nil})
+				return
+			}
+		}
 
 		if body.Years > 0 {
 			options = append(options, create.OptionNotAfter{
 				NotAfter: time.Now().Add(time.Duration(body.Years*365*24) * time.Hour),
 			})
 		}
+
+		var (
+			inspection stepin.Inspection
+			crt        create.Crt
+			key        create.Key
+		)
 
 		switch profile {
 		case create.RootCA:
@@ -269,13 +342,17 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 				c.JSON(http.StatusBadRequest, R[any]{"-1", err.Error(), nil})
 				return
 			}
+
 			inspection, crt, key, err = create.NewRootCA(create.RootOptions{
 				PrimaryOptions: create.PrimaryOptions{
 					Subject:  body.Name,
 					Password: body.Pass,
 				},
 			}, options...)
-
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
+				return
+			}
 		case create.IntermediateCA:
 			body.Pass, err = handleIntermediateCAPassword(body.Pass)
 			if err != nil {
@@ -296,6 +373,7 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 				c.JSON(http.StatusBadRequest, R[any]{"-1", err.Error(), nil})
 				return
 			}
+
 			inspection, crt, key, err = create.NewIntermediateCA(create.RootlessOptions{
 				PrimaryOptions: create.PrimaryOptions{
 					Subject:  body.Name,
@@ -305,6 +383,10 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 				RootCaKey:    cert.Key,
 				RootPassword: rootPassword,
 			}, options...)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
+				return
+			}
 		case create.Leaf:
 			if body.RootCaID == "" {
 				c.JSON(http.StatusBadRequest, R[any]{"-1", "parent ca is required for leaf cert", nil})
@@ -338,11 +420,10 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 				RootCaKey:    cert.Key,
 				RootPassword: rootPassword,
 			}, options...)
-		}
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
-			return
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, R[any]{"-1", err.Error(), nil})
+				return
+			}
 		}
 
 		cert := &Cert{
@@ -366,4 +447,31 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 	})
 
 	return nil
+}
+
+// vendor/go/pkg/mod/github.com/gin-gonic/gin@v1.9.1/context.go:1055
+var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+
+func escapeQuotes(s string) string {
+	return quoteEscaper.Replace(s)
+}
+
+// vendor/go/pkg/mod/github.com/gin-gonic/gin@v1.9.1/context.go:1063
+func dataAttachment(c *gin.Context, status int, contentType string, data []byte, filename string) {
+	if isASCII(filename) {
+		c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+escapeQuotes(filename)+`"`)
+	} else {
+		c.Writer.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.QueryEscape(filename))
+	}
+	c.Data(http.StatusOK, "application/octet-stream", data)
+}
+
+// vendor/go/pkg/mod/github.com/gin-gonic/gin@v1.9.1/utils.go:157
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }

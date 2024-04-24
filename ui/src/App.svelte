@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getCertList } from './api/cert';
+	import { BASE_URL } from './config/server';
 	import CertModalButton from './lib/CertModalButton.svelte';
+
+	const ColCount = 3;
 
 	let certs: Cert[] = [];
 
@@ -44,20 +47,38 @@
         border-collapse: collapse;
         width: 100%;
 
-				thead {
-					position: sticky;
-					top: 0;
-					left: 0;
-					background-color: lightgray;
-					color: black;
-				}
+        thead {
+          position: sticky;
+          top: 0;
+          left: 0;
+          background-color: lightgray;
+          color: black;
+        }
+
+        tr {
+          &.root {
+            background-color: orangered;
+            color: white;
+          }
+
+          &.intermediate {
+            background-color: gold;
+						color: black;
+          }
+
+          &.leaf {
+            background-color: greenyellow;
+						color: black;
+          }
+        }
 
         th, td {
           border: 1px solid darkgray;
           padding: 3px 5px;
-					&.sep {
-						background-color: lightgray;
-					}
+
+          &.sep {
+            background-color: lightgray;
+          }
         }
       }
     }
@@ -86,18 +107,31 @@
 			</thead>
 			<tbody>
 			{#each certs as cert (cert.id)}
-				<tr>
+				<tr
+					class:root={cert.profile === 'root-ca'}
+					class:intermediate={cert.profile === 'intermediate-ca'}
+					class:leaf={cert.profile === 'leaf'}
+				>
 					<td>{cert.id}</td>
 					<td>{cert.profile}</td>
 					<td>{cert.name}</td>
 				</tr>
 				<tr>
-					<td colspan="3">
+					<td colspan={ColCount}>
 						<pre>{cert.inspection}</pre>
 					</td>
 				</tr>
 				<tr>
-					<td colspan="3" class="sep"></td>
+					<td colspan={ColCount}>
+						<a href="{BASE_URL}/cert/crt/{cert.id}" target="_blank">Download Crt</a>
+						{#if cert.profile === 'leaf'}
+							|
+							<a href="{BASE_URL}/cert/key/{cert.id}" target="_blank">Download Key</a>
+						{/if}
+					</td>
+				</tr>
+				<tr>
+					<td colspan={ColCount} class="sep"></td>
 				</tr>
 			{/each}
 			</tbody>

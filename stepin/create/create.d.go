@@ -37,6 +37,12 @@ const (
 	RSA KeyType = "RSA"
 )
 
+var AllKeyTypes = []KeyType{
+	EC,
+	OKP,
+	RSA,
+}
+
 type Curve string
 
 const (
