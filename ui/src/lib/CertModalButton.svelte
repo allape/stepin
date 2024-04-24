@@ -17,36 +17,46 @@
 
 	export let profile: CertProfile = 'leaf';
 
+	let loading = false;
+
 	let open: boolean = false;
 	let formEle: HTMLFormElement | null = null;
 	let certs: Cert[] = [];
 
-	$: {
-		if (open) {
-			const form = formEle as HTMLFormElementX;
-			if (form) {
-				form.reset();
-				switch (profile) {
-					case 'root-ca':
-						form.subjectName.value = 'root';
-						form.years.value = '10';
-						break;
-					case 'intermediate-ca':
-						form.subjectName.value = 'intermediate';
-						form.years.value = '10';
-						break;
-					case 'leaf':
-						form.years.value = '1';
-						break;
-				}
+	function handleReset() {
+		const form = formEle as HTMLFormElementX;
+		if (form) {
+			form.reset();
+			switch (profile) {
+				case 'root-ca':
+					form.subjectName.value = 'root';
+					form.years.value = '10';
+					break;
+				case 'intermediate-ca':
+					form.subjectName.value = 'intermediate';
+					form.years.value = '5';
+					break;
+				case 'leaf':
+					form.years.value = '1';
+					break;
 			}
-			getCertList().then(list => {
-				certs = list.filter(cert => cert.profile === 'root-ca' || cert.profile === 'intermediate-ca');
-			});
+		}
+		getCertList().then(list => {
+			certs = list.filter(cert => cert.profile === 'root-ca' || cert.profile === 'intermediate-ca');
+		});
+	}
+
+	$: {
+		if (open && formEle) {
+			handleReset();
 		}
 	}
 
 	async function handleSubmit() {
+		if (loading) {
+			return;
+		}
+
 		const form = formEle as HTMLFormElementX;
 
 		if (!form) {
@@ -61,13 +71,17 @@
 			years: Number.parseInt(form.years.value, 10) || 0
 		};
 
-		const name = await ajax<string>(`/cert/${profile}`, {
-			method: 'PUT',
-			body: JSON.stringify(body)
-		});
-		alert(`${name} saved!`);
-		open = false;
-		dispatch('change', { name });
+		try {
+			const name = await ajax<string>(`/cert/${profile}`, {
+				method: 'PUT',
+				body: JSON.stringify(body)
+			});
+			alert(`${name} saved!`);
+			open = false;
+			dispatch('change', { name });
+		} finally {
+			loading = false;
+		}
 	}
 </script>
 
@@ -82,16 +96,24 @@
       table {
         width: 100%;
 
-        input, select {
-          width: 100%;
+				td {
+					padding-bottom: 10px;
+				}
+
+        .controller {
+          display: flex;
+
+          input, select {
+            flex: 1;
+          }
         }
       }
     }
 
     .buttons {
-      position: static;
-      bottom: 0;
-      left: 0;
+			display: flex;
+			justify-content: flex-end;
+			gap: 20px;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -100,7 +122,7 @@
   }
 </style>
 
-<button on:click={() => open = true}>Add New {CertProfiles[profile]} Cert</button>
+<button on:click={() => open = true}>New {CertProfiles[profile]}</button>
 <Modal bind:open>
 	<div class="wrapper">
 		<form bind:this={formEle} on:submit|preventDefault>
@@ -108,38 +130,56 @@
 				<tbody>
 				<tr>
 					<td><label for="SubjectName">Subject Name*:</label></td>
-					<td><input id="SubjectName" name="subjectName" type="text"></td>
+					<td>
+						<div class="controller">
+							<input id="SubjectName" name="subjectName" type="text">
+						</div>
+					</td>
 				</tr>
 				<tr>
 					<td><label for="Password">Password:</label></td>
-					<td><input id="Password" name="pass" type="text"></td>
+					<td>
+						<div class="controller">
+							<input id="Password" name="pass" type="text">
+						</div>
+					</td>
 				</tr>
 				<tr>
 					<td><label for="years">Life Span(Year):</label></td>
-					<td><input id="years" name="years" type="number" min="0" step="1"></td>
+					<td>
+						<div class="controller">
+							<input id="years" name="years" type="number" min="0" step="1">
+						</div>
+					</td>
 				</tr>
 				{#if profile !== 'root-ca'}
 					<tr>
 						<td><label for="RootCaID">Root CA*:</label></td>
 						<td>
-							<select id="RootCaID" name="rootCaID">
-								{#each certs as cert}
-									<option value={cert.id}>{cert.profile}:{cert.name}</option>
-								{/each}
-							</select>
+							<div class="controller">
+								<select id="RootCaID" name="rootCaID">
+									{#each certs as cert}
+										<option value={cert.id}>{cert.profile}:{cert.name}</option>
+									{/each}
+								</select>
+							</div>
 						</td>
 					</tr>
 					<tr>
 						<td><label for="RootCaPassword">Root CAPassword:</label></td>
-						<td><input id="RootCaPassword" name="rootCaPassword" type="text"></td>
+						<td>
+							<div class="controller">
+								<input id="RootCaPassword" name="rootCaPassword" type="text">
+							</div>
+						</td>
 					</tr>
 				{/if}
 				</tbody>
 			</table>
 		</form>
 		<div class="buttons">
-			<button on:click={() => open = false}>Close</button>
-			<button on:click={handleSubmit}>Submit</button>
+			<button on:click={() => open = false} disabled={loading}>Close</button>
+			<button on:click={handleSubmit} disabled={loading}>Submit</button>
 		</div>
 	</div>
 </Modal>

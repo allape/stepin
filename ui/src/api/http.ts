@@ -8,9 +8,9 @@ export type Validator<T, D> = (res: D) => Promise<T>;
 export async function make<T = unknown, D = unknown>(url: string, validator: Validator<T, D>, options?: RequestInit): Promise<T> {
   try {
     const res = await fetch(url, options);
-    if (res.status != 200) {
-      throw new Error(res.statusText);
-    }
+    // if (res.status != 200) {
+    //   throw new Error(res.statusText);
+    // }
     return await validator(await res.json());
   } catch (e) {
     const yes = confirm(stringify(e));

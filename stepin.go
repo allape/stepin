@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -47,8 +48,7 @@ type (
 )
 
 func BuildDBKey(profile create.Profile, name create.SubjectName) DBKey {
-	saltyName, _ := salt.Encode([]byte(name), TxtSalt)
-	return DBKey(fmt.Sprintf("cert:%s:%s", profile, salt.Sha256ToHexString(saltyName)))
+	return DBKey(fmt.Sprintf("cert:%s:%s", profile, salt.Sha256ToHexStringFromString(string(name))))
 }
 
 func BuildProfileDBKeyPattern(profile create.Profile) string {
@@ -241,6 +241,11 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 				Inspection: cert.Inspection,
 			})
 		}
+
+		sort.Slice(certs, func(i, j int) bool {
+			return certs[i].Name < certs[j].Name
+		})
+
 		c.JSON(http.StatusOK, R[[]GetCertBody]{"0", "OK", certs})
 	})
 
@@ -306,7 +311,11 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 		dbKey := BuildDBKey(profile, body.Name)
 		_, err = GetCert(dbKey, db)
 		if err == nil {
-			c.JSON(http.StatusBadRequest, R[any]{"-1", "certificate already exists", nil})
+			c.JSON(http.StatusBadRequest, R[any]{
+				"-1",
+				"certificate already exists, deletion only can be done in database manually",
+				nil,
+			})
 			return
 		}
 
