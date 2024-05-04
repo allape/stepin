@@ -3,4 +3,5 @@
 
 /assets
 /database
+/database-*
 /data.db*

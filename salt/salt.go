@@ -3,6 +3,7 @@ package salt
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -32,6 +33,70 @@ func Sha256ToHexStringFromString(content string) HexString {
 	return Sha256ToHexString([]byte(content))
 }
 
+func newPassword(extraSalt []byte) []byte {
+	return Sha256(append([]byte(Salt+Password), extraSalt...))
+}
+
+func encode(plain, password, iv []byte, cbc bool) ([]byte, error) {
+	paddingLength := aes.BlockSize - (len(plain) % aes.BlockSize)
+	plain = append(plain, bytes.Repeat([]byte{byte(paddingLength)}, paddingLength)...)
+
+	if len(iv) > aes.BlockSize {
+		iv = iv[:aes.BlockSize]
+	}
+
+	ci, err := aes.NewCipher(password)
+	if err != nil {
+		return nil, err
+	}
+	var mode cipher.BlockMode
+	if cbc {
+		mode = cipher.NewCBCEncrypter(ci, iv)
+	}
+
+	content := make([]byte, len(plain))
+	for index := range len(plain) / aes.BlockSize {
+		i1 := index * aes.BlockSize
+		i2 := (index + 1) * aes.BlockSize
+		if mode == nil {
+			ci.Encrypt(content[i1:i2], plain[i1:i2])
+		} else {
+			mode.CryptBlocks(content[i1:i2], plain[i1:i2])
+		}
+	}
+
+	return append(iv, content...), nil
+}
+
+func decode(content, password []byte, cbc bool) ([]byte, error) {
+	iv := content[:aes.BlockSize]
+	content = content[aes.BlockSize:]
+
+	ci, err := aes.NewCipher(password)
+	if err != nil {
+		return nil, err
+	}
+	var mode cipher.BlockMode
+	if cbc {
+		mode = cipher.NewCBCDecrypter(ci, iv)
+	}
+
+	plain := make([]byte, len(content))
+	for index := range len(content) / aes.BlockSize {
+		i1 := index * aes.BlockSize
+		i2 := (index + 1) * aes.BlockSize
+		if mode == nil {
+			ci.Decrypt(plain[i1:i2], content[i1:i2])
+		} else {
+			mode.CryptBlocks(plain[i1:i2], content[i1:i2])
+		}
+	}
+
+	paddingSize := plain[len(plain)-1]
+
+	return plain[:len(plain)-int(paddingSize)], nil
+}
+
 func Encode(plain, salt []byte) ([]byte, error) {
 	iv := make([]byte, aes.BlockSize)
 	_, err := rand.Read(iv)
@@ -39,25 +104,9 @@ func Encode(plain, salt []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	password := Sha256(append([]byte(Salt+Password), salt...))
+	password := newPassword(salt)
 
-	paddingLength := aes.BlockSize - (len(plain) % aes.BlockSize)
-	plain = append(plain, bytes.Repeat([]byte{byte(paddingLength)}, paddingLength)...)
-
-	cipher, err := aes.NewCipher(password)
-	if err != nil {
-		return nil, err
-	}
-
-	content := make([]byte, len(plain))
-	cipher.Encrypt(content, iv)
-	for index := range len(plain) / aes.BlockSize {
-		i1 := index * aes.BlockSize
-		i2 := (index + 1) * aes.BlockSize
-		cipher.Encrypt(content[i1:i2], plain[i1:i2])
-	}
-
-	return append(iv, content...), nil
+	return encode(plain, password, iv, true)
 }
 
 func Decode(content, salt []byte) ([]byte, error) {
@@ -65,27 +114,9 @@ func Decode(content, salt []byte) ([]byte, error) {
 		return nil, errors.New("invalid content length")
 	}
 
-	password := Sha256(append([]byte(Salt+Password), salt...))
+	password := newPassword(salt)
 
-	iv := content[:aes.BlockSize]
-	content = content[aes.BlockSize:]
-
-	cipher, err := aes.NewCipher(password)
-	if err != nil {
-		return nil, err
-	}
-
-	plain := make([]byte, len(content))
-	cipher.Decrypt(plain, iv)
-	for index := range len(content) / aes.BlockSize {
-		i1 := index * aes.BlockSize
-		i2 := (index + 1) * aes.BlockSize
-		cipher.Decrypt(plain[i1:i2], content[i1:i2])
-	}
-
-	paddingSize := plain[len(plain)-1]
-
-	return plain[:len(plain)-int(paddingSize)], nil
+	return decode(content, password, true)
 }
 
 func EncodeToHexString(plain, salt []byte) (HexString, error) {
