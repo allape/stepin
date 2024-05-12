@@ -7,6 +7,7 @@ type EnvarName string
 const (
 	StepinMode         EnvarName = "STEPIN_MODE"
 	StepinListen       EnvarName = "STEPIN_LISTEN"
+	StepinBin          EnvarName = "STEPIN_BIN"
 	StepinAssetsFolder EnvarName = "STEPIN_ASSETS_FOLDER"
 
 	StepinDatabaseFilename EnvarName = "STEPIN_DATABASE_FILENAME"

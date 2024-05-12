@@ -8,30 +8,36 @@ import (
 	"os"
 )
 
-func New(subject OptionSubject, options ...CreationOption) (stepin.Inspection, error) {
-	args, err := subject.Apply(nil)
+func New(subject OptionSubject, options ...stepin.CommandOption) (stepin.Inspection, error) {
+	commander, err := subject.Apply(&stepin.Commander{
+		Executable: "step",
+		Arguments:  nil,
+	})
 	if err != nil {
 		return "", err
 	}
+
 	for _, option := range options {
-		args, err = option.Apply(args)
+		commander, err = option.Apply(commander)
 		if err != nil {
 			return "", err
 		}
 	}
 
 	_, err = stepin.Exec(
-		"step",
+		commander.Executable,
 		append([]string{
 			"certificate",
 			"create",
-		}, args...)...,
+		}, commander.Arguments...)...,
 	)
 	if err != nil {
 		return "", err
 	}
 
-	return inspect.Inspect(string(subject.CrtFile), false)
+	return inspect.Inspect(string(subject.CrtFile), false, stepin.OptionCommandBin{
+		CommandBin: commander.Executable,
+	})
 }
 
 type PrimaryOptions struct {
@@ -39,7 +45,7 @@ type PrimaryOptions struct {
 	Password Password    `json:"password"`
 }
 
-func NewRaw(opt PrimaryOptions, options ...CreationOption) (stepin.Inspection, Crt, Key, error) {
+func NewRaw(opt PrimaryOptions, options ...stepin.CommandOption) (stepin.Inspection, Crt, Key, error) {
 	subject := opt.Subject
 	password := opt.Password
 	passFilePath := PasswordFile("")
@@ -104,7 +110,7 @@ type RootOptions struct {
 
 func NewRootCA(
 	opt RootOptions,
-	options ...CreationOption,
+	options ...stepin.CommandOption,
 ) (stepin.Inspection, Crt, Key, error) {
 	return NewRaw(opt.PrimaryOptions, append(options, OptionProfile{Profile: RootCA})...)
 }
@@ -118,7 +124,7 @@ type RootlessOptions struct {
 
 func NewRootless(
 	opt RootlessOptions,
-	options ...CreationOption,
+	options ...stepin.CommandOption,
 ) (stepin.Inspection, Crt, Key, error) {
 	rootCaCrtFile, disRCCF, err := stepin.NewTmpFile("stepin_root_ca_crt_*.txt", opt.RootCaCrt)
 	if err != nil {
@@ -160,14 +166,14 @@ func NewRootless(
 
 func NewIntermediateCA(
 	opt RootlessOptions,
-	options ...CreationOption,
+	options ...stepin.CommandOption,
 ) (stepin.Inspection, Crt, Key, error) {
 	return NewRootless(opt, append(options, OptionProfile{Profile: IntermediateCA})...)
 }
 
 func NewLeaf(
 	opt RootlessOptions,
-	options ...CreationOption,
+	options ...stepin.CommandOption,
 ) (stepin.Inspection, Crt, Key, error) {
 	return NewRootless(opt, append(options, OptionProfile{Profile: Leaf})...)
 }
@@ -190,7 +196,7 @@ func NewLeaf(
 //		)
 func NewTLS(
 	opt RootlessOptions,
-	options ...CreationOption,
+	options ...stepin.CommandOption,
 ) (stepin.Inspection, Crt, Key, error) {
 	return NewLeaf(
 		opt,

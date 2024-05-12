@@ -15,12 +15,12 @@ func Exec(cmd string, args ...string) (string, error) {
 	defer cancel()
 	command := exec.CommandContext(ctx, cmd, args...)
 	output, err := command.CombinedOutput()
-	log.Println("Command output:", string(output))
-	if command.ProcessState.ExitCode() != 0 {
-		return "", fmt.Errorf("non-0 exit code: %s", output)
-	}
+	log.Println("Command output:", string(output), err)
 	if err != nil {
 		return "", err
+	}
+	if command.ProcessState.ExitCode() != 0 {
+		return "", fmt.Errorf("non-0 exit code: %s", output)
 	}
 	return string(output), nil
 }

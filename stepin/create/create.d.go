@@ -71,273 +71,279 @@ type (
 	PasswordFile FilePath
 )
 
-type CreationOption interface {
-	stepin.CmdOption
-}
-
 type OptionSubject struct {
-	CreationOption
+	stepin.CommandOption
 	Subject SubjectName `json:"<subject>"`
 	CrtFile CrtFile     `json:"<crt-file>"`
 	KeyFile KeyFile     `json:"<key-file>"`
 }
 
-func (o OptionSubject) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append([]string{
+func (o OptionSubject) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append([]string{
 		string(o.Subject),
 		string(o.CrtFile),
 		string(o.KeyFile),
-	}, args...), nil
+	}, commander.Arguments...)
+
+	return commander, nil
 }
 
 type OptionKeyType struct {
-	CreationOption
+	stepin.CommandOption
 	KTY KeyType `json:"--kty"`
 }
 
-func (o OptionKeyType) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--kty", string(o.KTY)), nil
+func (o OptionKeyType) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--kty", string(o.KTY))
+	return commander, nil
 }
 
 type OptionSize struct {
-	CreationOption
+	stepin.CommandOption
 	Size BitSize `json:"--size"`
 }
 
-func (o OptionSize) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--size", fmt.Sprintf("%d", o.Size)), nil
+func (o OptionSize) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--size", fmt.Sprintf("%d", o.Size))
+	return commander, nil
 }
 
 type OptionCurve struct {
-	CreationOption
+	stepin.CommandOption
 	Curve Curve `json:"--crv/--curve"`
 }
 
-func (o OptionCurve) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--crv", string(o.Curve)), nil
+func (o OptionCurve) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--crv", string(o.Curve))
+	return commander, nil
 }
 
 type OptionCSR struct {
-	CreationOption
+	stepin.CommandOption
 	CSR bool `json:"--csr"`
 }
 
-func (o OptionCSR) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionCSR) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	if o.CSR {
-		return append(args, "--csr"), nil
+		commander.Arguments = append(commander.Arguments, "--csr")
 	}
-	return args, nil
+	return commander, nil
 }
 
 type OptionProfile struct {
-	CreationOption
+	stepin.CommandOption
 	Profile Profile `json:"--profile"`
 }
 
-func (o OptionProfile) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--profile", string(o.Profile)), nil
+func (o OptionProfile) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--profile", string(o.Profile))
+	return commander, nil
 }
 
 type OptionTemplate struct {
-	CreationOption
+	stepin.CommandOption
 	Template FilePath `json:"--template"`
 }
 
-func (o OptionTemplate) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	if o.Template == "" {
-		return args, nil
+func (o OptionTemplate) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	if o.Template != "" {
+		commander.Arguments = append(commander.Arguments, "--template", string(o.Template))
 	}
-	return append(args, "--template", string(o.Template)), nil
+	return commander, nil
 }
 
 type OptionSet struct {
-	CreationOption
+	stepin.CommandOption
 	Set []Set `json:"--set"`
 }
 
-func (o OptionSet) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionSet) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	for _, set := range o.Set {
-		args = append(args, "--set", fmt.Sprintf("%s=%s", set.Key, set.Value))
+		commander.Arguments = append(commander.Arguments, "--set", fmt.Sprintf("%s=%s", set.Key, set.Value))
 	}
-	return args, nil
+	return commander, nil
 }
 
 type OptionSetFile struct {
-	CreationOption
+	stepin.CommandOption
 	SetFile FilePath `json:"--set-file"`
 }
 
-func (o OptionSetFile) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	if o.SetFile == "" {
-		return args, nil
+func (o OptionSetFile) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	if o.SetFile != "" {
+		commander.Arguments = append(commander.Arguments, "--set-file", string(o.SetFile))
 	}
-	return append(args, "--set-file", string(o.SetFile)), nil
+	return commander, nil
 }
 
 type OptionNotBefore struct {
-	CreationOption
+	stepin.CommandOption
 	NotBefore time.Time `json:"--not-before"`
 }
 
-func (o OptionNotBefore) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--not-before", o.NotBefore.Format(time.RFC3339)), nil
+func (o OptionNotBefore) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--not-before", o.NotBefore.Format(time.RFC3339))
+	return commander, nil
 }
 
 type OptionNotAfter struct {
-	CreationOption
+	stepin.CommandOption
 	NotAfter time.Time `json:"--not-after"`
 }
 
-func (o OptionNotAfter) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--not-after", o.NotAfter.Format(time.RFC3339)), nil
+func (o OptionNotAfter) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--not-after", o.NotAfter.Format(time.RFC3339))
+	return commander, nil
 }
 
 type OptionSAN struct {
-	CreationOption
+	stepin.CommandOption
 	SAN []SAN `json:"--san"`
 }
 
-func (o OptionSAN) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionSAN) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	for _, record := range o.SAN {
-		args = append(args, "--san", string(record))
+		commander.Arguments = append(commander.Arguments, "--san", string(record))
 	}
-	return args, nil
+	return commander, nil
 }
 
 type OptionCA struct {
-	CreationOption
+	stepin.CommandOption
 	CA CrtFile `json:"--ca"`
 }
 
-func (o OptionCA) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	if o.CA == "" {
-		return args, nil
+func (o OptionCA) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	if o.CA != "" {
+		commander.Arguments = append(commander.Arguments, "--ca", string(o.CA))
 	}
-	return append(args, "--ca", string(o.CA)), nil
+	return commander, nil
 }
 
 type OptionCAKMS struct {
-	CreationOption
+	stepin.CommandOption
 	CAKMS URI `json:"--ca-kms"`
 }
 
-func (o OptionCAKMS) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--ca-kms", string(o.CAKMS)), nil
+func (o OptionCAKMS) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--ca-kms", string(o.CAKMS))
+	return commander, nil
 }
 
 type OptionCAKey struct {
-	CreationOption
+	stepin.CommandOption
 	CAKey KeyFile `json:"--ca-key"`
 }
 
-func (o OptionCAKey) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	if o.CAKey == "" {
-		return args, nil
+func (o OptionCAKey) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	if o.CAKey != "" {
+		commander.Arguments = append(commander.Arguments, "--ca-key", string(o.CAKey))
 	}
-	return append(args, "--ca-key", string(o.CAKey)), nil
+	return commander, nil
 }
 
 type OptionCAPasswordFile struct {
-	CreationOption
+	stepin.CommandOption
 	CAPasswordFile PasswordFile `json:"--ca-password-file"`
 }
 
-func (o OptionCAPasswordFile) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	if o.CAPasswordFile == "" {
-		return args, nil
+func (o OptionCAPasswordFile) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	if o.CAPasswordFile != "" {
+		commander.Arguments = append(commander.Arguments, "--ca-password-file", string(o.CAPasswordFile))
 	}
-	return append(args, "--ca-password-file", string(o.CAPasswordFile)), nil
+	return commander, nil
 }
 
 type OptionKMS struct {
-	CreationOption
+	stepin.CommandOption
 	KMS URI `json:"--kms"`
 }
 
-func (o OptionKMS) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	return append(args, "--kms", string(o.KMS)), nil
+func (o OptionKMS) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	commander.Arguments = append(commander.Arguments, "--kms", string(o.KMS))
+	return commander, nil
 }
 
 type OptionKey struct {
-	CreationOption
+	stepin.CommandOption
 	Key KeyFile `json:"--key"`
 }
 
-func (o OptionKey) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	if o.Key == "" {
-		return args, nil
+func (o OptionKey) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	if o.Key != "" {
+		commander.Arguments = append(commander.Arguments, "--key", string(o.Key))
 	}
-	return append(args, "--key", string(o.Key)), nil
+	return commander, nil
 }
 
 type OptionPasswordFile struct {
-	CreationOption
+	stepin.CommandOption
 	PasswordFile PasswordFile `json:"--password-file"`
 }
 
-func (o OptionPasswordFile) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
-	if o.PasswordFile == "" {
-		return args, nil
+func (o OptionPasswordFile) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
+	if o.PasswordFile != "" {
+		commander.Arguments = append(commander.Arguments, "--password-file", string(o.PasswordFile))
 	}
-	return append(args, "--password-file", string(o.PasswordFile)), nil
+	return commander, nil
 }
 
 type OptionNoPassword struct {
-	CreationOption
+	stepin.CommandOption
 	NoPassword bool `json:"--no-password"`
 }
 
-func (o OptionNoPassword) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionNoPassword) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	if o.NoPassword {
-		return append(args, "--no-password", "--insecure"), nil
+		commander.Arguments = append(commander.Arguments, "--no-password", "--insecure")
 	}
-	return args, nil
+	return commander, nil
 }
 
 type OptionBundle struct {
-	CreationOption
+	stepin.CommandOption
 	Bundle bool `json:"--bundle"`
 }
 
-func (o OptionBundle) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionBundle) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	if o.Bundle {
-		return append(args, "--bundle"), nil
+		commander.Arguments = append(commander.Arguments, "--bundle")
 	}
-	return args, nil
+	return commander, nil
 }
 
 type OptionSkipCSRSignature struct {
-	CreationOption
+	stepin.CommandOption
 	SkipCSRSignature bool `json:"--skip-csr-signature"`
 }
 
-func (o OptionSkipCSRSignature) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionSkipCSRSignature) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	if o.SkipCSRSignature {
-		return append(args, "--skip-csr-signature"), nil
+		commander.Arguments = append(commander.Arguments, "--skip-csr-signature")
 	}
-	return args, nil
+	return commander, nil
 }
 
 type OptionForce struct {
-	CreationOption
+	stepin.CommandOption
 	Force bool `json:"-f/--force"`
 }
 
-func (o OptionForce) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionForce) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	if o.Force {
-		return append(args, "-f"), nil
+		commander.Arguments = append(commander.Arguments, "-f")
 	}
-	return args, nil
+	return commander, nil
 }
 
 type OptionSubtle struct {
-	CreationOption
+	stepin.CommandOption
 	Subtle bool `json:"--subtle"`
 }
 
-func (o OptionSubtle) Apply(args stepin.CommandArguments) (stepin.CommandArguments, error) {
+func (o OptionSubtle) Apply(commander *stepin.Commander) (*stepin.Commander, error) {
 	if o.Subtle {
-		return append(args, "--subtle"), nil
+		commander.Arguments = append(commander.Arguments, "--subtle")
 	}
-	return args, nil
+	return commander, nil
 }

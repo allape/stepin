@@ -319,7 +319,17 @@ func SetupStepinServer(server *gin.Engine, db *redka.DB) error {
 			return
 		}
 
-		var options []create.CreationOption
+		commandBinOption := stepin.OptionCommandBin{
+			CommandBin: "step",
+		}
+		commandBin := env.Get(env.StepinBin, "")
+		if commandBin != "" {
+			commandBinOption.CommandBin = commandBin
+		}
+
+		options := []stepin.CommandOption{
+			commandBinOption,
+		}
 
 		if body.KeyType != "" {
 			if slices.Contains(create.AllKeyTypes, body.KeyType) {

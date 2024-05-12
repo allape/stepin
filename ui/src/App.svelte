@@ -3,6 +3,7 @@
 	import { getCertList } from './api/cert';
 	import { BASE_URL } from './config/server';
 	import CertModalButton from './lib/CertModalButton.svelte';
+	import Click2More from './lib/Click2More.svelte';
 
 	const ColCount = 3;
 
@@ -22,6 +23,23 @@
 </script>
 
 <style lang="scss">
+  @mixin CertColor {
+    &.root-ca {
+      background-color: orangered;
+      color: white;
+    }
+
+    &.intermediate-ca {
+      background-color: gold;
+      color: black;
+    }
+
+    &.leaf {
+      background-color: greenyellow;
+      color: black;
+    }
+  }
+
   .wrapper {
     max-width: 1200px;
     margin: auto;
@@ -56,29 +74,20 @@
         }
 
         tr {
-          &.root {
-            background-color: orangered;
-            color: white;
-          }
-
-          &.intermediate {
-            background-color: gold;
-						color: black;
-          }
-
-          &.leaf {
-            background-color: greenyellow;
-						color: black;
-          }
+          @include CertColor;
         }
-
         th, td {
           border: 1px solid darkgray;
           padding: 3px 5px;
+        }
 
-          &.sep {
-            background-color: lightgray;
-          }
+        td.sep {
+          @include CertColor;
+        }
+
+        td.border {
+          width: 10px;
+          @include CertColor;
         }
       }
     }
@@ -107,18 +116,16 @@
 			</thead>
 			<tbody>
 			{#each certs as cert (cert.id)}
-				<tr
-					class:root={cert.profile === 'root-ca'}
-					class:intermediate={cert.profile === 'intermediate-ca'}
-					class:leaf={cert.profile === 'leaf'}
-				>
+				<tr class={cert.profile}>
 					<td>{cert.id}</td>
 					<td>{cert.profile}</td>
 					<td>{cert.name}</td>
 				</tr>
 				<tr>
 					<td colspan={ColCount}>
-						<pre>{cert.inspection}</pre>
+						<Click2More>
+							<pre>{cert.inspection}</pre>
+						</Click2More>
 					</td>
 				</tr>
 				<tr>
@@ -131,7 +138,7 @@
 					</td>
 				</tr>
 				<tr>
-					<td colspan={ColCount} class="sep"></td>
+					<td colspan={ColCount} class={cert.profile} class:sep={true}></td>
 				</tr>
 			{/each}
 			</tbody>
