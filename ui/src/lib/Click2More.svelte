@@ -5,24 +5,23 @@
 <style lang="scss">
   .pointer {
     cursor: pointer;
-    background-color: lightgray;
     padding: 0 4px;
   }
 </style>
 
 <div class="wrapper">
 	{#if open}
-		<slot name="trigger">
-			<div class="pointer" on:click={() => open = false}>
-				hide
-			</div>
-		</slot>
+		<div class="pointer" on:click={() => open = false}>
+			<slot name="hide">
+				Collapse
+			</slot>
+		</div>
 		<slot></slot>
 	{:else }
-		<slot name="closed">
-			<div class="pointer" on:click={() => open = true}>
+		<div class="pointer" on:click={() => open = true}>
+			<slot name="more">
 				more
-			</div>
-		</slot>
+			</slot>
+		</div>
 	{/if}
 </div>

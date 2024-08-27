@@ -9,8 +9,17 @@
 
 	let certs: Cert[] = [];
 
+	function sortByName(a: Cert, b: Cert): number {
+		return a.name.localeCompare(b.name);
+	}
+
 	async function getList() {
-		certs = await getCertList();
+		const cs = await getCertList();
+		certs = [
+			...cs.filter(i => i.profile === 'leaf').sort(sortByName),
+			...cs.filter(i => i.profile === 'intermediate-ca').sort(sortByName),
+			...cs.filter(i => i.profile === 'root-ca').sort(sortByName)
+		];
 	}
 
 	onMount(() => {
@@ -23,23 +32,6 @@
 </script>
 
 <style lang="scss">
-  @mixin CertColor {
-    &.root-ca {
-      background-color: orangered;
-      color: white;
-    }
-
-    &.intermediate-ca {
-      background-color: gold;
-      color: black;
-    }
-
-    &.leaf {
-      background-color: greenyellow;
-      color: black;
-    }
-  }
-
   .wrapper {
     max-width: 1200px;
     margin: auto;
@@ -74,20 +66,24 @@
         }
 
         tr {
-          @include CertColor;
+          &.root-ca {
+            background-color: orangered;
+            color: white;
+          }
+
+          &.intermediate-ca {
+            background-color: gold;
+            color: black;
+          }
+
+          &.leaf {
+            background-color: greenyellow;
+            color: black;
+          }
         }
         th, td {
           border: 1px solid darkgray;
           padding: 3px 5px;
-        }
-
-        td.sep {
-          @include CertColor;
-        }
-
-        td.border {
-          width: 10px;
-          @include CertColor;
         }
       }
     }
@@ -117,18 +113,19 @@
 			<tbody>
 			{#each certs as cert (cert.id)}
 				<tr class={cert.profile}>
-					<td>{cert.id}</td>
-					<td>{cert.profile}</td>
 					<td>{cert.name}</td>
+					<td>{cert.profile}</td>
+					<td>{cert.id}</td>
 				</tr>
-				<tr>
+				<tr class={cert.profile}>
 					<td colspan={ColCount}>
 						<Click2More>
+							<div slot="more">{cert.inspection.split('\n')[0]} ... Click to expand</div>
 							<pre>{cert.inspection}</pre>
 						</Click2More>
 					</td>
 				</tr>
-				<tr>
+				<tr class={cert.profile}>
 					<td colspan={ColCount}>
 						<a href="{BASE_URL}/cert/crt/{cert.id}" target="_blank">Download Crt</a>
 						{#if cert.profile === 'leaf'}
@@ -138,7 +135,7 @@
 					</td>
 				</tr>
 				<tr>
-					<td colspan={ColCount} class={cert.profile} class:sep={true}></td>
+					<td colspan={ColCount}></td>
 				</tr>
 			{/each}
 			</tbody>
