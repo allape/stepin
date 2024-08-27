@@ -14,7 +14,7 @@ COPY ui .
 
 RUN npm run build
 
-FROM alpine:3.19.1 as builder
+FROM alpine:3.19.1 AS builder
 
 ARG GO_BINARY_NAME="go1.22.2.linux-amd64.tar.gz"
 
