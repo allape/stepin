@@ -1,7 +1,7 @@
 FROM node:21.7.3 AS ui_builder
 
-RUN npm config --global set proxy "$http_proxy" && \
-    npm config --global set https-proxy "$http_proxy"
+RUN test -n "$http_proxy" && npm config --global set proxy "$http_proxy" || exit 0
+RUN test -n "$https_proxy" && npm config --global set https-proxy "$https_proxy" || exit 0
 
 WORKDIR /build
 
