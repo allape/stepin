@@ -11,14 +11,14 @@
 
 <div class="wrapper">
 	{#if open}
-		<div class="pointer" on:click={() => open = false}>
+		<div class="pointer" role="none" on:click={() => open = false}>
 			<slot name="hide">
 				Collapse
 			</slot>
 		</div>
 		<slot></slot>
 	{:else }
-		<div class="pointer" on:click={() => open = true}>
+		<div class="pointer" role="none" on:click={() => open = true}>
 			<slot name="more">
 				more
 			</slot>
