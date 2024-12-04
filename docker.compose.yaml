@@ -1,0 +1,18 @@
+name: stepin
+services:
+  app:
+    image: allape/stepin:latest
+    restart: unless-stopped
+    volumes:
+      - ./database:/app/database
+    ports:
+      - "8080:8080"
+    environment:
+      GIN_MODE: release
+      STEPIN_HTTP_ADDRESS: ":8080"
+      STEPIN_HTTP_CORS: "true"
+      STEPIN_UI_INDEX: "/app/ui/dist/index.html"
+      STEPIN_DATABASE_FILENAME: "/app/database/data.db"
+      STEPIN_DATABASE_FIELD_PASSWORD: "12345678"
+      STEPIN_ROOT_CA_PASSWORD: "123456"
+      STEPIN_INTERMEDIATE_CA_PASSWORD: "456789"

@@ -23,10 +23,10 @@ var (
 	HttpCors    = goenv.Getenv(stepinHttpCors, true)
 	UIIndex     = goenv.Getenv(stepinUIIndex, "ui/dist/index.html")
 
-	Bin = goenv.Getenv(stepinBin, "stepin")
+	Bin = goenv.Getenv(stepinBin, "step")
 
 	DatabaseFilename = goenv.Getenv(stepinDatabaseFilename, "database/data.db")
-	DatabasePassword = goenv.Getenv(stepinDatabaseFieldPassword, "123456")
+	DatabasePassword = goenv.Getenv(stepinDatabaseFieldPassword, "12345678")
 
 	RootCAPassword         = goenv.Getenv(stepinRootCAPassword, "123456")
 	IntermediateCAPassword = goenv.Getenv(stepinIntermediateCAPassword, "456789")
