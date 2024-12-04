@@ -1,0 +1,15 @@
+### Get all
+GET http://localhost:8080/api/cert/all
+
+### Recovery from file
+PATCH http://localhost:8080/api/recovery
+
+### Sign new leaf
+PUT http://localhost:8080/api/cert/leaf
+Content-Type: application/json; charset=utf-8
+
+{
+  "name": "test.lan.allape.cc",
+  "years": 2,
+  "parentCaID": 1
+}

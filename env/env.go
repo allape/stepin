@@ -1,27 +1,33 @@
 package env
 
-import "os"
-
-type EnvarName string
-
-const (
-	StepinMode         EnvarName = "STEPIN_MODE"
-	StepinListen       EnvarName = "STEPIN_LISTEN"
-	StepinBin          EnvarName = "STEPIN_BIN"
-	StepinAssetsFolder EnvarName = "STEPIN_ASSETS_FOLDER"
-
-	StepinDatabaseFilename EnvarName = "STEPIN_DATABASE_FILENAME"
-	StepinDatabaseSalt     EnvarName = "STEPIN_DATABASE_SALT"
-	StepinDatabasePassword EnvarName = "STEPIN_DATABASE_PASSWORD"
-
-	StepinRootCAPassword         EnvarName = "STEPIN_ROOT_CA_PASSWORD"
-	StepinIntermediateCAPassword EnvarName = "STEPIN_INTERMEDIATE_CA_PASSWORD"
+import (
+	"github.com/allape/goenv"
 )
 
-func Get(envar EnvarName, defaultValue string) string {
-	env := os.Getenv(string(envar))
-	if env == "" {
-		return defaultValue
-	}
-	return env
-}
+const (
+	stepinHttpAddress = "STEPIN_HTTP_ADDRESS"
+	stepinHttpCors    = "STEPIN_HTTP_CORS"
+	stepinUIIndex     = "STEPIN_UI_INDEX"
+
+	stepinBin = "STEPIN_BIN"
+
+	stepinDatabaseFilename      = "STEPIN_DATABASE_FILENAME"
+	stepinDatabaseFieldPassword = "STEPIN_DATABASE_FIELD_PASSWORD"
+
+	stepinRootCAPassword         = "STEPIN_ROOT_CA_PASSWORD"
+	stepinIntermediateCAPassword = "STEPIN_INTERMEDIATE_CA_PASSWORD"
+)
+
+var (
+	HttpAddress = goenv.Getenv(stepinHttpAddress, ":8080")
+	HttpCors    = goenv.Getenv(stepinHttpCors, true)
+	UIIndex     = goenv.Getenv(stepinUIIndex, "ui/dist/index.html")
+
+	Bin = goenv.Getenv(stepinBin, "stepin")
+
+	DatabaseFilename = goenv.Getenv(stepinDatabaseFilename, "database/data.db")
+	DatabasePassword = goenv.Getenv(stepinDatabaseFieldPassword, "123456")
+
+	RootCAPassword         = goenv.Getenv(stepinRootCAPassword, "123456")
+	IntermediateCAPassword = goenv.Getenv(stepinIntermediateCAPassword, "456789")
+)
