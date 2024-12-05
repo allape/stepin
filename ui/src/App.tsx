@@ -183,7 +183,7 @@ export default function App(): ReactElement {
       </Card>
       <Modal
         open={visible}
-        title="Modal"
+        title="Create a New Certificate"
         closable={!loading}
         maskClosable={!loading}
         onCancel={closeModal}
