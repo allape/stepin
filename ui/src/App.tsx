@@ -21,6 +21,7 @@ import {
   ICreateCertBody,
   KeyTypes,
   LV,
+  Profile,
   Profiles,
 } from "./model/cert.ts";
 import styles from "./style.module.scss";
@@ -126,10 +127,32 @@ export default function App(): ReactElement {
   );
 
   const openModal = useCallback(() => {
+    let profile: Profile;
+    let parentCaID: ICreateCertBody["parentCaID"];
+    let years: number;
+
+    if (recordsRef.current.length === 1) {
+      years = 5;
+      profile = "intermediate-ca";
+      parentCaID = recordsRef.current
+        .reverse()
+        .find((i) => i.name.includes("root"))?.id;
+    } else if (recordsRef.current.length === 0) {
+      profile = "root-ca";
+      years = 10;
+    } else {
+      years = 1;
+      profile = "leaf";
+      parentCaID = recordsRef.current
+        .reverse()
+        .find((i) => i.name.includes("intermedia"))?.id;
+    }
+
     form.setFieldsValue({
-      _profile: "leaf",
+      _profile: profile,
       keyType: "EC",
-      parentCaID: recordsRef.current.find((i) => i.name.includes("root"))?.id,
+      parentCaID: parentCaID,
+      years,
     });
     _openModal();
   }, [_openModal, form, recordsRef]);
@@ -187,7 +210,11 @@ export default function App(): ReactElement {
           <Form.Item name="pass" label="Password">
             <Input placeholder="password" allowClear />
           </Form.Item>
-          <Form.Item name="years" label="Life Span (In Year)">
+          <Form.Item
+            name="years"
+            label="Life Span (In Year)"
+            rules={[{ required: true, message: "Life space is required!" }]}
+          >
             <InputNumber
               placeholder="years"
               min={1}
@@ -203,11 +230,17 @@ export default function App(): ReactElement {
           >
             <Select options={KeyTypes} showSearch optionFilterProp="label" />
           </Form.Item>
-          <Form.Item name="parentCaID" label="Parent CA ID">
+          <Form.Item
+            name="parentCaID"
+            label="Parent CA ID"
+            extra="Required while signing a leaf or a self-signed cert"
+          >
             <Select
               options={recordOptions}
               showSearch
+              allowClear
               optionFilterProp="label"
+              placeholder="Required while signing a leaf or a self-signed cert"
             />
           </Form.Item>
           <Form.Item name="parentCaPassword" label="Parent CA Password">

@@ -19,37 +19,37 @@ export const Profiles: IColoredLV<Profile>[] = [
   {
     label: "IntermediaCA",
     color: "orange",
-    value: 'intermediate-ca',
+    value: "intermediate-ca",
   },
   {
     label: "Leaf",
     color: "green",
     value: "leaf",
   },
-  {
-    label: "Self-Signed",
-    color: "blue",
-    value: "self-signed",
-  },
+  // {
+  //   label: "Self-Signed",
+  //   color: "blue",
+  //   value: "self-signed",
+  // },
 ];
 
 export type KeyType = "EC" | "OKP" | "RSA";
 
-export const KeyTypes : IColoredLV<KeyType>[] = [
+export const KeyTypes: IColoredLV<KeyType>[] = [
   {
-    label: 'EC',
-    color: 'green',
-    value: 'EC',
+    label: "EC",
+    color: "green",
+    value: "EC",
   },
   {
-    label: 'OKP',
-    color: 'green',
-    value: 'OKP',
+    label: "OKP",
+    color: "green",
+    value: "OKP",
   },
   {
-    label: 'RSA',
-    color: 'orange',
-    value: 'RSA',
+    label: "RSA",
+    color: "orange",
+    value: "RSA",
   },
 ];
 
@@ -63,9 +63,9 @@ export interface ICert extends IBase {
 
 export interface ICreateCertBody extends Pick<ICert, "name"> {
   _profile: Profile;
-  pass: string;
+  pass?: string;
   years: number;
   keyType: KeyType;
-  parentCaID: number;
-  parentCaPassword: string;
+  parentCaID?: number;
+  parentCaPassword?: string;
 }
