@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	github.com/allape/gocensored v0.0.0-20241204084855-9b73e0aa29ea
-	github.com/allape/gocrud v0.0.0-20241127164118-ec99ca82482c
+	github.com/allape/gocrud v0.0.0-20241204131054-d645ac934d0b
 	github.com/allape/goenv v0.0.0-20241202051618-ce41afb81ebf
 	github.com/allape/gogger v0.0.0-20241202060124-256dfda7e2df
 	github.com/gin-contrib/cors v1.7.1
@@ -40,10 +40,10 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.12.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
-	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/crypto v0.30.0 // indirect
+	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

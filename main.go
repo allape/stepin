@@ -116,16 +116,14 @@ func main() {
 	}
 }
 
-type (
-	PutCertBody struct {
-		Name             create.SubjectName `json:"name"`
-		Pass             create.Password    `json:"pass"`
-		Years            int64              `json:"years"`
-		KeyType          create.KeyType     `json:"keyType"`
-		ParentCaID       uint               `json:"parentCaID"`
-		ParentCaPassword create.Password    `json:"parentCaPassword"`
-	}
-)
+type PutCertBody struct {
+	Name             create.SubjectName `json:"name"`
+	Pass             create.Password    `json:"pass"`
+	Years            int64              `json:"years"`
+	KeyType          create.KeyType     `json:"keyType"`
+	ParentCaID       uint               `json:"parentCaID"`
+	ParentCaPassword create.Password    `json:"parentCaPassword"`
+}
 
 type DownloadType string
 

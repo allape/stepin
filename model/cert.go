@@ -3,24 +3,17 @@ package model
 import (
 	"encoding/base64"
 	censored "github.com/allape/gocensored"
+	"github.com/allape/gocrud"
 	"github.com/allape/gogger"
 	"github.com/allape/stepin/env"
 	"github.com/allape/stepin/stepin"
 	"github.com/allape/stepin/stepin/create"
-	"time"
 )
 
 var (
 	CrtSalt = []byte("_crt_salt")
 	KeySalt = []byte("_key_salt")
 )
-
-type Base struct {
-	ID      uint       `gorm:"primaryKey" json:"id"`
-	Created time.Time  `gorm:"autoCreateTime" json:"created"`
-	Updated time.Time  `gorm:"autoUpdateTime" json:"updated"`
-	Deleted *time.Time `json:"deleted"`
-}
 
 var l = gogger.New("model.item")
 var (
@@ -55,7 +48,7 @@ func (s CensoredField) ToBytes() []byte {
 }
 
 type Cert struct {
-	Base
+	gocrud.Base
 	Profile    create.Profile     `json:"profile"`
 	Name       create.SubjectName `json:"name"`
 	Crt        CensoredField      `json:"crt" crtcensored:"saltyaes.base64"`
@@ -92,6 +85,7 @@ func (c *Cert) Decode() error {
 }
 
 func (c *Cert) Strip() *Cert {
+
 	c.Crt = ""
 	c.Key = ""
 	return c

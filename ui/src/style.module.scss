@@ -1,0 +1,31 @@
+@mixin sticky {
+  position: sticky;
+  left: 0;
+  background-color: white;
+  @media (prefers-color-scheme: dark) {
+    background-color: black;
+  }
+}
+
+.wrapper {
+  margin: 10px;
+  max-width: 1200px;
+  @media screen and (min-width: 1220px) {
+    margin: 10px auto;
+  }
+  @media screen and (max-width: 600px) {
+    margin: 0;
+  }
+
+  :global(.ant-card-head) {
+    @include sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  :global(.ant-table-thead) {
+    @include sticky;
+    top: 56px;
+    z-index: 11;
+  }
+}
