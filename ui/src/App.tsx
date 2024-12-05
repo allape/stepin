@@ -95,6 +95,7 @@ export default function App(): ReactElement {
       {
         title: "Actions",
         align: "center",
+        fixed: "right",
         render: (_, record) => {
           return (
             <>
@@ -131,21 +132,19 @@ export default function App(): ReactElement {
     let parentCaID: ICreateCertBody["parentCaID"];
     let years: number;
 
+    const certs = [...recordsRef.current].reverse();
+
     if (recordsRef.current.length === 1) {
       years = 5;
       profile = "intermediate-ca";
-      parentCaID = recordsRef.current
-        .reverse()
-        .find((i) => i.name.includes("root"))?.id;
+      parentCaID = certs.find((i) => i.name.includes("root"))?.id;
     } else if (recordsRef.current.length === 0) {
       profile = "root-ca";
       years = 10;
     } else {
       years = 1;
       profile = "leaf";
-      parentCaID = recordsRef.current
-        .reverse()
-        .find((i) => i.name.includes("intermedia"))?.id;
+      parentCaID = certs.find((i) => i.name.includes("intermedia"))?.id;
     }
 
     form.setFieldsValue({
@@ -165,7 +164,7 @@ export default function App(): ReactElement {
     <ThemeProvider>
       <Card
         className={styles.wrapper}
-        title="Crud for React with AntD"
+        title="Certificate Management"
         extra={
           <>
             <Button type="primary" onClick={openModal}>
@@ -179,6 +178,7 @@ export default function App(): ReactElement {
           dataSource={records}
           columns={columns}
           pagination={false}
+          scroll={{ x: true }}
         />
       </Card>
       <Modal

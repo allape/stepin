@@ -15,6 +15,10 @@
   }
   @media screen and (max-width: 600px) {
     margin: 0;
+    border-radius: 0;
+    :global(.ant-card-body) {
+      padding: 10px;
+    }
   }
 
   :global(.ant-card-head) {
@@ -23,9 +27,9 @@
     z-index: 10;
   }
 
-  :global(.ant-table-thead) {
-    @include sticky;
-    top: 56px;
-    z-index: 11;
-  }
+  //:global(.ant-table-thead) {
+  //  @include sticky;
+  //  top: 56px;
+  //  z-index: 11;
+  //}
 }
