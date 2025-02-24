@@ -15,6 +15,7 @@ import {
   Tag,
 } from "antd";
 import { ReactElement, useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CertCrudy, createCert } from "./api/cert.ts";
 import {
   ICert,
@@ -27,6 +28,7 @@ import {
 import styles from "./style.module.scss";
 
 export default function App(): ReactElement {
+  const { t } = useTranslation();
   const { loading, execute } = useLoading();
 
   const [visible, _openModal, closeModal] = useToggle(false);
@@ -63,37 +65,37 @@ export default function App(): ReactElement {
   const columns = useMemo<TableProps<ICert>["columns"]>(
     () => [
       {
-        title: "ID",
+        title: t("id"),
         dataIndex: "id",
       },
       {
-        title: "Name",
+        title: t("name"),
         dataIndex: "name",
       },
       {
-        title: "Inspection",
+        title: t("inspection"),
         dataIndex: "inspection",
         render: ahelper.EllipsisCell(),
       },
       {
-        title: "Profile",
+        title: t("profile"),
         dataIndex: "profile",
         render: (v) => {
           const profile = Profiles.find((p) => p.value === v);
           return (
             <Tag color={profile?.color || "gray"}>
-              {profile?.label || "Unknown"}
+              {profile?.label || t("unknown")}
             </Tag>
           );
         },
       },
       {
-        title: "Create Time",
+        title: t("createdAt"),
         dataIndex: "createdAt",
         render: (v) => new Date(v).toLocaleString(),
       },
       {
-        title: "Actions",
+        title: t("download"),
         align: "center",
         fixed: "right",
         render: (_, record) => {
@@ -105,7 +107,7 @@ export default function App(): ReactElement {
                 href={`${config.SERVER_URL}/cert/crt/${record.id}`}
                 target="_blank"
               >
-                Crt
+                {t("crt")}
               </Button>
               <Button
                 disabled={
@@ -117,14 +119,14 @@ export default function App(): ReactElement {
                 href={`${config.SERVER_URL}/cert/key/${record.id}`}
                 target="_blank"
               >
-                Key
+                {t("key")}
               </Button>
             </>
           );
         },
       },
     ],
-    [],
+    [t],
   );
 
   const openModal = useCallback(() => {
@@ -164,11 +166,11 @@ export default function App(): ReactElement {
     <ThemeProvider>
       <Card
         className={styles.wrapper}
-        title="Certificate Management"
+        title={t("title")}
         extra={
           <>
             <Button type="primary" onClick={openModal}>
-              Sign New Cert
+              {t("signNewCertificate")}
             </Button>
           </>
         }
@@ -183,7 +185,7 @@ export default function App(): ReactElement {
       </Card>
       <Modal
         open={visible}
-        title="Create a New Certificate"
+        title={t("signNewCertificate")}
         closable={!loading}
         maskClosable={!loading}
         onCancel={closeModal}
@@ -195,28 +197,43 @@ export default function App(): ReactElement {
         <Form<ICreateCertBody> {...aconfig.FormLayoutProps} form={form}>
           <Form.Item
             name="_profile"
-            label="Profile"
-            rules={[{ required: true, message: "Profile is required!" }]}
+            label={t("profile")}
+            rules={[
+              {
+                required: true,
+                message: t("xxxIsRequired", { xxx: t("profile") }),
+              },
+            ]}
           >
             <Select options={Profiles} showSearch optionFilterProp="label" />
           </Form.Item>
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: "Common Name is required!" }]}
+            label={t("commonName")}
+            rules={[
+              {
+                required: true,
+                message: t("xxxIsRequired", { xxx: t("commonName") }),
+              },
+            ]}
           >
             <Input placeholder="name" allowClear />
           </Form.Item>
-          <Form.Item name="pass" label="Password">
+          <Form.Item name="pass" label={t("password")}>
             <Input placeholder="password" allowClear />
           </Form.Item>
           <Form.Item
             name="years"
-            label="Life Span (In Year)"
-            rules={[{ required: true, message: "Life space is required!" }]}
+            label={t("lifeSpan")}
+            rules={[
+              {
+                required: true,
+                message: t("xxxIsRequired", { xxx: t("lifeSpan") }),
+              },
+            ]}
           >
             <InputNumber
-              placeholder="years"
+              placeholder={t("lifeSpan")}
               min={1}
               max={20}
               step={1}
@@ -225,26 +242,31 @@ export default function App(): ReactElement {
           </Form.Item>
           <Form.Item
             name="keyType"
-            label="Key Type"
-            rules={[{ required: true, message: "Key type is required!" }]}
+            label={t("keyType")}
+            rules={[
+              {
+                required: true,
+                message: t("xxxIsRequired", { xxx: t("keyType") }),
+              },
+            ]}
           >
             <Select options={KeyTypes} showSearch optionFilterProp="label" />
           </Form.Item>
           <Form.Item
             name="parentCaID"
-            label="Parent CA ID"
-            extra="Required while signing a leaf or a self-signed cert"
+            label={t("parentCA")}
+            extra={t("parentCATips")}
           >
             <Select
               options={recordOptions}
               showSearch
               allowClear
               optionFilterProp="label"
-              placeholder="Required while signing a leaf or a self-signed cert"
+              placeholder={t("parentCATips")}
             />
           </Form.Item>
-          <Form.Item name="parentCaPassword" label="Parent CA Password">
-            <Input placeholder="password" allowClear />
+          <Form.Item name="parentCaPassword" label={t("parentCaPassword")}>
+            <Input placeholder={t("parentCaPassword")} allowClear />
           </Form.Item>
         </Form>
       </Modal>

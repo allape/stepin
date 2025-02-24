@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/allape/gocrud"
 	"github.com/allape/gogger"
+	"github.com/allape/stepin/asset"
 	"github.com/allape/stepin/env"
 	"github.com/allape/stepin/model"
 	"github.com/allape/stepin/stepin"
@@ -110,6 +111,14 @@ func main() {
 		l.Error().Fatalln("failed to setup ui controller", err)
 	}
 
+	engine.GET("/", func(context *gin.Context) {
+		context.Redirect(http.StatusMovedPermanently, "/ui/index.html")
+	})
+
+	engine.GET("/favicon.ico", func(context *gin.Context) {
+		context.Data(http.StatusOK, asset.FaviconMimeType, asset.Favicon)
+	})
+
 	err = engine.Run(env.HttpAddress)
 	if err != nil {
 		l.Error().Fatalln("failed to start server", err)
@@ -135,21 +144,19 @@ var (
 
 func SetupCertController(group *gin.RouterGroup, db *gorm.DB) error {
 	group = group.Group("cert")
-	certCrudy := gocrud.CRUD[model.Cert]{
+	err := gocrud.New(group, db, gocrud.Crud[model.Cert]{
 		EnableGetAll:  true,
 		DisablePage:   true,
-		DisableCount:  false,
+		DisableCount:  true,
 		DisableDelete: true,
 		DisableSave:   true,
 		DisableGetOne: true,
-		DidGetAll: func(record []model.Cert, ctx *gin.Context, repo *gorm.DB) error {
+		DidGetAll: func(record []model.Cert, ctx *gin.Context, repo *gorm.DB) {
 			for i := range record {
 				record[i].Strip()
 			}
-			return nil
 		},
-	}
-	err := certCrudy.Setup(group, db)
+	})
 	if err != nil {
 		return err
 	}
@@ -167,6 +174,8 @@ func SetupCertController(group *gin.RouterGroup, db *gorm.DB) error {
 			gocrud.MakeErrorResponse(context, gocrud.RestCoder.BadRequest(), err)
 			return
 		}
+
+		body.Name = create.SubjectName(strings.TrimSpace(string(body.Name)))
 
 		if body.Name == "" {
 			gocrud.MakeErrorResponse(context, gocrud.RestCoder.BadRequest(), fmt.Errorf("name is required"))
@@ -237,7 +246,7 @@ func SetupCertController(group *gin.RouterGroup, db *gorm.DB) error {
 			}
 
 			var parentCa model.Cert
-			err = db.First(&parentCa, body.ParentCaID).Error
+			err = db.Model(&parentCa).First(&parentCa, body.ParentCaID).Error
 			if err != nil {
 				gocrud.MakeErrorResponse(context, gocrud.RestCoder.NotFound(), err)
 				return
@@ -275,7 +284,7 @@ func SetupCertController(group *gin.RouterGroup, db *gorm.DB) error {
 			}
 
 			var parentCa model.Cert
-			err = db.First(&parentCa, body.ParentCaID).Error
+			err = db.Model(&parentCa).First(&parentCa, body.ParentCaID).Error
 			if err != nil {
 				gocrud.MakeErrorResponse(context, gocrud.RestCoder.NotFound(), err)
 				return
@@ -328,7 +337,7 @@ func SetupCertController(group *gin.RouterGroup, db *gorm.DB) error {
 			return
 		}
 
-		err = db.Create(cert).Error
+		err = db.Model(&model.Cert{}).Create(cert).Error
 		if err != nil {
 			gocrud.MakeErrorResponse(context, gocrud.RestCoder.InternalServerError(), err)
 			return
@@ -350,7 +359,7 @@ func SetupCertController(group *gin.RouterGroup, db *gorm.DB) error {
 		id := context.Param("id")
 
 		var cert model.Cert
-		err := db.First(&cert, id).Error
+		err := db.Model(&cert).First(&cert, id).Error
 		if err != nil {
 			gocrud.MakeErrorResponse(context, gocrud.RestCoder.NotFound(), err)
 			return
