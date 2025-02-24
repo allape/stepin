@@ -39,7 +39,7 @@ CMD [ "/app/app" ]
 
 ### build ###
 # export docker_http_proxy=http://host.docker.internal:1080
-# docker build --build-arg http_proxy=$docker_http_proxy --build-arg https_proxy=$docker_http_proxy -f Dockerfile -t allape/stepin:latest .
+# docker build --platform linux/amd64 --build-arg http_proxy=$docker_http_proxy --build-arg https_proxy=$docker_http_proxy -f Dockerfile -t allape/stepin:latest .
 
 ### run ###
 # docker compose -f docker.compose.yaml up -d
