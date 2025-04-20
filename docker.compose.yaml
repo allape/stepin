@@ -1,7 +1,7 @@
 name: stepin
 services:
   app:
-    image: allape/stepin:latest
+    image: ghcr.io/allape/stepin:main
     restart: unless-stopped
     volumes:
       - ./database:/app/database
