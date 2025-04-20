@@ -1,12 +1,5 @@
 import { IBase } from "@allape/gocrud";
-import { SelectProps } from "antd";
-
-export type LV = Exclude<SelectProps["options"], undefined>[number];
-
-export interface IColoredLV<T extends string> extends LV {
-  color: string;
-  value: T;
-}
+import { IColoredLV } from "@allape/gocrud-react";
 
 export type Profile = "root-ca" | "intermediate-ca" | "leaf" | "self-signed";
 

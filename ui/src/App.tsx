@@ -1,5 +1,6 @@
 import { BaseSearchParams, IBaseSearchParams } from "@allape/gocrud";
-import { aconfig, ahelper, config, ThemeProvider } from "@allape/gocrud-react";
+import { config, Ellipsis, ILV, ThemeProvider } from "@allape/gocrud-react";
+import { AntdFormLayoutProps } from "@allape/gocrud-react/src/helper/antd.tsx";
 import { useLoading, useProxy, useToggle } from "@allape/use-loading";
 import {
   Button,
@@ -21,7 +22,6 @@ import {
   ICert,
   ICreateCertBody,
   KeyTypes,
-  LV,
   Profile,
   Profiles,
 } from "./model/cert.ts";
@@ -34,7 +34,7 @@ export default function App(): ReactElement {
   const [visible, _openModal, closeModal] = useToggle(false);
 
   const [records, recordsRef, setRecords] = useProxy<ICert[]>([]);
-  const [recordOptions, setRecordOptions] = useState<LV[]>([]);
+  const [recordOptions, setRecordOptions] = useState<ILV<ICert["id"]>[]>([]);
 
   const [form] = Form.useForm<ICreateCertBody>();
 
@@ -75,7 +75,7 @@ export default function App(): ReactElement {
       {
         title: t("inspection"),
         dataIndex: "inspection",
-        render: ahelper.EllipsisCell(),
+        render: (v) => <Ellipsis>{v}</Ellipsis>,
       },
       {
         title: t("profile"),
@@ -194,7 +194,7 @@ export default function App(): ReactElement {
         okButtonProps={{ loading }}
         afterClose={afterModalClosed}
       >
-        <Form<ICreateCertBody> {...aconfig.FormLayoutProps} form={form}>
+        <Form<ICreateCertBody> {...AntdFormLayoutProps} form={form}>
           <Form.Item
             name="_profile"
             label={t("profile")}

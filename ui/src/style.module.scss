@@ -23,8 +23,11 @@
 
   :global(.ant-card-head) {
     @include sticky;
-    top: 0;
-    z-index: 10;
+
+    & {
+      top: 0;
+      z-index: 10;
+    }
   }
 
   //:global(.ant-table-thead) {
